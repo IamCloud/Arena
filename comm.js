@@ -1,12 +1,36 @@
 let Server = {
-    initPlayer: function (playerName, teamName) {
+    initPlayer: function (uuid, playerName, teamName) {
         return new Promise((resolve, reject) => {
             fetch("/initplayer", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ PlayerName: playerName, Name: teamName, Wins: 0 })
+                body: JSON.stringify({ Guid: uuid, PlayerName: playerName, TeamName: teamName})
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        console.error('Network response was not ok');
+                    }
+                    resolve(true);
+                })
+                .then(data => {
+                    resolve(data && data.success);
+                })
+                .catch(error => {
+                    console.error('Error creating team and player:', error);
+                    reject(error);
+                })
+        });
+    },
+    createTeam: function (uuid, teamName) {
+        return new Promise((resolve, reject) => {
+            fetch("/createteam", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ Guid: uuid, TeamName: teamName})
             })
                 .then(response => {
                     if (!response.ok) {
@@ -26,7 +50,7 @@ let Server = {
 
     // Function to fetch leaderboard data from the Go server
     getLeaderboard: function () {
-        fetch('/leaderboard')
+        fetch('/getleaderboard')
             .then(response => response.json())
             .then(data => {
                 // Call function to populate leaderboard with the retrieved data
