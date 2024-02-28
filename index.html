@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark" />
+  <title>Arena</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+  <script src="comm.js"></script>
+  <script src="main.js"></script>
+</head>
+
+<body>
+  <main class="container">
+    <h1 class="title">Arena</h1>
+
+    <h2>Best teams of all time</h2>
+    <table id="leaderboard">
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Team</th>
+          <th>Wins</th>
+        </tr>
+      </thead>
+      <tbody id="leaderboardContent"></tbody>
+    </table>
+  </main>
+</body>
+
+<template id="dialog-template">
+  <dialog open>
+    <article>
+      <header>
+        <p>
+          <strong id="dialog-title"></strong>
+        </p>
+      </header>
+      <p id="dialog-text"></p>
+      <form id="dialog-form">  
+        <label>Choose your player name</label>
+        <input id="player-name-input" type="text" required minlength="3" maxlength="60" />      
+        <label>Choose your first team's name</label>
+        <input id="team-name-input" type="text" required minlength="3" maxlength="60" />
+      </form>
+
+      <footer>
+        <input id="confirm-btn" type="submit" form="dialog-form" value="Confirm"/>
+      </footer>
+    </article>
+  </dialog>
+</template>
+</html>
