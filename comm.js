@@ -1,12 +1,12 @@
 let Server = {
-    initPlayer: function (uuid, playerName, teamName) {
+    initPlayer: function (uuid, playerName) {
         return new Promise((resolve, reject) => {
             fetch("/initplayer", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ Guid: uuid, PlayerName: playerName, TeamName: teamName})
+                body: JSON.stringify({ PlayerId: uuid, PlayerName: playerName})
             })
                 .then(response => {
                     if (!response.ok) {
@@ -18,28 +18,29 @@ let Server = {
                     resolve(data && data.success);
                 })
                 .catch(error => {
-                    console.error('Error creating team and player:', error);
+                    console.error('Error creating player:', error);
                     reject(error);
                 })
         });
     },
-    createTeam: function (uuid, teamName) {
+    createTeam: function (playerId, teamName) {
         return new Promise((resolve, reject) => {
             fetch("/createteam", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ Guid: uuid, TeamName: teamName})
+                body: JSON.stringify({ PlayerId: playerId, TeamName: teamName})
             })
                 .then(response => {
                     if (!response.ok) {
                         console.error('Network response was not ok');
+                        return;
                     }
-                    resolve(true);
+                    return response.json();
                 })
                 .then(data => {
-                    resolve(data && data.success);
+                    resolve(data.team_id);
                 })
                 .catch(error => {
                     console.error('Error creating team:', error);

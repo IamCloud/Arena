@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -38,17 +39,25 @@ func main() {
 }
 
 func initDb() {
-	databasePath := "/database.db"
+	// Get the current working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Error getting current working directory: %v", err)
+	}
+
+	// Construct the path to the database file in the project folder
+	databasePath := filepath.Join(cwd, "database.db")
+
+	// If the database file does not exist, create it
 	if _, err := os.Stat(databasePath); os.IsNotExist(err) {
-		// If the database file does not exist, create it
 		file, err := os.Create(databasePath)
 		if err != nil {
 			log.Fatalf("Error creating database file: %v", err)
 		}
 		file.Close()
 	}
+
 	// Open the SQLite database
-	var err error
 	db, err = sql.Open("sqlite3", databasePath)
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
@@ -69,6 +78,9 @@ func createTables() error {
 	if err := createPlayersTable(); err != nil {
 		return err
 	}
+	if err := createPlayerTeamsRelTable(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -76,7 +88,7 @@ func createTeamsTable() error {
 	// Create users table
 	_, err := db.Exec(`
         CREATE TABLE IF NOT EXISTS teams (
-			teamsId INTEGER PRIMARY KEY,
+			team_id INTEGER PRIMARY KEY,
         	name TEXT,
 			wins INTEGER
         )
@@ -94,23 +106,35 @@ func createPlayersTable() error {
 	// Create users table
 	_, err := db.Exec(`
         CREATE TABLE IF NOT EXISTS players (
-        	guid VARCHAR PRIMARY KEY,
-            name TEXT,
-			teamsId INTEGER,
-			FOREIGN KEY(teamsId) REFERENCES teams(teamsId)
+        	player_id VARCHAR PRIMARY KEY,
+            name TEXT
         )
     `)
 	if err != nil {
 		return fmt.Errorf("error creating players table: %v", err)
 	}
-
-	// Create other tables as needed
-
 	return nil
 }
 
-func insertTeam(name string) (int64, error) {
-	result, err := db.Exec("INSERT INTO teams (name, wins) VALUES (?, 0)", name)
+func createPlayerTeamsRelTable() error {
+	// Create users table
+	_, err := db.Exec(`
+        CREATE TABLE IF NOT EXISTS players_teams (
+        	player_id INTEGER NOT NULL,
+			team_id INTEGER NOT NULL,
+			PRIMARY KEY (player_id, team_id),
+			FOREIGN KEY (player_id) REFERENCES players(player_id),
+			FOREIGN KEY (team_id) REFERENCES teams(team_id)
+        )
+    `)
+	if err != nil {
+		return fmt.Errorf("error creating players_teams reliationship table: %v", err)
+	}
+	return nil
+}
+
+func insertTeam(req CreateTeamRequest) (int64, error) {
+	result, err := db.Exec("INSERT INTO teams (name, wins) VALUES (?, 0)", req.TeamName)
 	if err != nil {
 		return 0, fmt.Errorf("error inserting team: %v", err)
 	}
@@ -120,13 +144,18 @@ func insertTeam(name string) (int64, error) {
 		return 0, fmt.Errorf("error retrieving last insert ID: %v", err)
 	}
 
+	_, err = db.Exec("INSERT INTO players_teams (player_id, team_id) VALUES (?, ?)", req.PlayerId, id)
+	if err != nil {
+		return 0, fmt.Errorf("error player team relationship: %v", err)
+	}
+
 	return id, nil
 }
 
-func insertPlayer(guid string, name string, teamsId int64) error {
-	_, err := db.Exec("INSERT INTO players (guid, name, teamsId) VALUES (?, ?, ?)", guid, name, teamsId)
+func insertPlayer(req CreatePlayerRequest) error {
+	_, err := db.Exec("INSERT INTO players (player_id, name) VALUES (?, ?)", req.PlayerId, req.PlayerName)
 	if err != nil {
-		return fmt.Errorf("error inserting team: %v", err)
+		return fmt.Errorf("error inserting player: %v", err)
 	}
 
 	return nil
@@ -174,35 +203,29 @@ type Leaderboard struct {
 	Wins int
 }
 
-type InitPlayerRequest struct {
-	Guid       string
-	TeamName   string
+type CreatePlayerRequest struct {
+	PlayerId   string
 	PlayerName string
 }
 
 func initPlayer(w http.ResponseWriter, r *http.Request) {
 	// Decode the JSON request body into a struct
-	var req InitPlayerRequest
+	var req CreatePlayerRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	newTeamId, err := insertTeam(req.TeamName)
-	if err != nil {
-		fmt.Fprintf(w, "error inserting team: %v", err)
-		return
-	}
-	insertPlayer(req.Guid, req.TeamName, newTeamId)
+	insertPlayer(req)
 
 	// Return a success response
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Team %s with player %s created successfully", req.TeamName, req.PlayerName)
+	fmt.Printf("Player %s created successfully\n", req.PlayerName)
 }
 
 type CreateTeamRequest struct {
-	Guid     string
+	PlayerId string
 	TeamName string
 }
 
@@ -215,13 +238,20 @@ func createTeam(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	teamId, err := insertTeam(req.TeamName)
+	teamId, err := insertTeam(req)
 	if err != nil {
-		fmt.Fprintf(w, "error inserting team: %v", err)
+		fmt.Printf("error inserting team: %v\n", err)
 		return
 	}
 
-	// Return a success response
+	response := struct {
+		TeamID int64 `json:"team_id"`
+	}{
+		TeamID: teamId,
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, "Team %s[%s] created successfully", req.TeamName, teamId)
+	json.NewEncoder(w).Encode(response)
+
+	fmt.Printf("Team %s[%s] created successfully for player of id %s\n", req.TeamName, strconv.FormatInt(teamId, 10), req.PlayerId)
 }

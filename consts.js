@@ -1,7 +1,17 @@
 const STORED_PLAYERID = "playerid";
-const STORED_TEAMNAME = "teamid";
+const STORED_TEAMID = "teamid";
 const MAX_TEAM_SIZE = 5;
 
+const Abilities = {
+    Heal: {
+        name: "Heal",
+        description: "Heals an ally or itself for x health."
+    },
+    Whirlwind: {
+        name: "Whirlwind",
+        description: "Spins around and attacks all enemies."
+    },
+}
 const Heroes = {
     Warrior: {
         name: "Warrior",
@@ -23,16 +33,5 @@ const Heroes = {
         abilities: {
             0: Abilities.Heal
         }
-    },
-}
-
-const Abilities = {
-    Heal: {
-        name: "Heal",
-        description: "Heals an ally or itself for x health."
-    },
-    Whirlwind: {
-        name: "Whirlwind",
-        description: "Spins around and attacks all enemies."
     },
 }
