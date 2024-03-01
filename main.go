@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strconv"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -24,7 +25,7 @@ func main() {
 	fmt.Println("Database initialised")
 
 	http.HandleFunc("/getleaderboard", getLeaderboard)
-	http.HandleFunc("/initplayer", initPlayer)
+	http.HandleFunc("/createplayer", createPlayer)
 	http.HandleFunc("/createteam", createTeam)
 
 	_, filename, _, _ := runtime.Caller(0)
@@ -141,7 +142,7 @@ func insertTeam(req CreateTeamRequest) (int64, error) {
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return 0, fmt.Errorf("error retrieving last insert ID: %v", err)
+		return 0, fmt.Errorf("error retrieving last inserted ID: %v", err)
 	}
 
 	_, err = db.Exec("INSERT INTO players_teams (player_id, team_id) VALUES (?, ?)", req.PlayerId, id)
@@ -152,8 +153,8 @@ func insertTeam(req CreateTeamRequest) (int64, error) {
 	return id, nil
 }
 
-func insertPlayer(req CreatePlayerRequest) error {
-	_, err := db.Exec("INSERT INTO players (player_id, name) VALUES (?, ?)", req.PlayerId, req.PlayerName)
+func insertPlayer(req CreatePlayerRequest, guid string) error {
+	_, err := db.Exec("INSERT INTO players (player_id, name) VALUES (?, ?)", guid, req.Name)
 	if err != nil {
 		return fmt.Errorf("error inserting player: %v", err)
 	}
@@ -204,11 +205,10 @@ type Leaderboard struct {
 }
 
 type CreatePlayerRequest struct {
-	PlayerId   string
-	PlayerName string
+	Name string
 }
 
-func initPlayer(w http.ResponseWriter, r *http.Request) {
+func createPlayer(w http.ResponseWriter, r *http.Request) {
 	// Decode the JSON request body into a struct
 	var req CreatePlayerRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -217,11 +217,28 @@ func initPlayer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	insertPlayer(req)
+	if req.Name == "" {
+		http.Error(w, "Name cannot be empty", http.StatusBadRequest)
+		return
+	}
 
-	// Return a success response
+	playerGuid := uuid.New().String()
+	err = insertPlayer(req, playerGuid)
+	if err != nil {
+		fmt.Printf("error inserting player: %v\n", err)
+		return
+	}
+
+	response := struct {
+		PlayerGuid string `json:"player_guid"`
+	}{
+		PlayerGuid: playerGuid,
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	fmt.Printf("Player %s created successfully\n", req.PlayerName)
+	json.NewEncoder(w).Encode(response)
+
+	fmt.Printf("Player %s created.\n", req.Name)
 }
 
 type CreateTeamRequest struct {
@@ -235,6 +252,11 @@ func createTeam(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if req.TeamName == "" {
+		http.Error(w, "Team name cannot be empty", http.StatusBadRequest)
 		return
 	}
 
