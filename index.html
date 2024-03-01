@@ -41,7 +41,7 @@
       <p id="dialog-text"></p>
       <form id="dialog-form">  
         <label>Choose your player name: </label>
-        <input id="player-name-input" type="text" required minlength="3" maxlength="60" />      
+        <input id="player-name-input" type="text" required minlength="3" maxlength="20" />      
       </form>
 
       <footer>
@@ -62,7 +62,7 @@
       <p id="dialog-text"></p>
       <form id="new-team-form">      
         <label>Choose your team name: </label>
-        <input id="team-name-input" type="text" required minlength="3" maxlength="60" />
+        <input id="team-name-input" type="text" required minlength="3" maxlength="20" />
       </form>
 
       <footer>
@@ -71,4 +71,27 @@
     </article>
   </dialog>
 </template>
+
+<template id="dialog-template-upgrade">
+  <dialog open>
+    <article>
+      <header>
+        <p>
+          <strong id="dialog-title">Choose an upgrade !</strong>
+        </p>
+      </header>
+      <p id="dialog-text"></p>
+      <form id="upgrade-form">              
+        <div id="upgrades-container" class="grid">
+
+        </div>
+      </form>
+
+      <footer>
+        <input id="confirm-btn" type="submit" form="upgrade-form" value="Confirm"/>
+      </footer>
+    </article>
+  </dialog>
+</template>
+
 </html>

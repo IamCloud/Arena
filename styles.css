@@ -1,0 +1,15 @@
+.common {
+    border: 2px solid grey;
+}
+.uncommon {
+    border: 2px solid green;
+}
+.rare {
+    border: 2px solid blue;
+}
+.epic {
+    border: 2px solid purple;
+}
+.legendary {
+    border: 2px solid gold;
+}

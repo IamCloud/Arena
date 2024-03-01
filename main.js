@@ -21,6 +21,8 @@ window.addEventListener('load', function () {
 
 function startGame() {
     console.log(`Starting game for player ${playerId} with team ${teamId}`);
+    // Temporary for testing:
+    openUpgradeDialog();
 }
 
 function gameOver() {
@@ -81,6 +83,59 @@ function openNewTeamDialog() {
 
     dialogTitle.textContent = "Create a new team !";
     dialogText.remove();
+
+    dialogForm.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+
+        if (!teamname.checkValidity()) return;
+        localStorage.setItem(STORED_TEAMID, teamname.value);
+
+        Server.createTeam(localStorage.getItem(STORED_PLAYERID), teamname.value)
+            .then(teamId => {
+                if (!teamId) {
+                    console.error("createTeam failed.");
+                    return;
+                }
+                localStorage.setItem(STORED_TEAMID, teamId);
+
+                dialog.close();
+                openUpgradeDialog();
+            }).catch(error => {
+                console.error('Error creating team:', error);
+            });
+
+    });
+    document.body.appendChild(templateClone);
+}
+
+function openUpgradeDialog() {
+    const template = document.querySelector("#dialog-template-upgrade");
+
+    const templateClone = template.content.cloneNode(true);
+    const dialog = templateClone.querySelector("dialog");
+    const dialogForm = templateClone.querySelector("#upgrade-form");  
+    const upgradesContainer = dialogForm.querySelector("#upgrades-container");
+
+    Server.getNewUpgrades()
+            .then(data => {
+                if (!data) {
+                    console.error("getNewUpgrades failed.");
+                    return;
+                }
+
+                data.forEach(upgrade => {
+                    createUpgradeCard(upgrade);
+                });
+
+                dialog.close();                
+            }).catch(error => {
+                console.error('Error getting new upgrades:', error);
+            });
+
+            function createUpgradeCard(upgrade) {
+                console.log(upgrade);
+            }
+
 
     dialogForm.addEventListener("submit", function (ev) {
         ev.preventDefault();

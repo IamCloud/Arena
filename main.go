@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -27,6 +28,7 @@ func main() {
 	http.HandleFunc("/getleaderboard", getLeaderboard)
 	http.HandleFunc("/createplayer", createPlayer)
 	http.HandleFunc("/createteam", createTeam)
+	http.HandleFunc("/getnewupgrades", getNewUpgrades)
 
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
@@ -197,6 +199,65 @@ func getLeaderboard(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+type Item struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
+type Class struct {
+	ID               int    `json:"id"`
+	Name             string `json:"name"`
+	SpecialAbilities string `json:"special_abilities"`
+}
+
+func getNewUpgrades(w http.ResponseWriter, r *http.Request) {
+	var upgrades []interface{}
+
+	for i := 0; i < 3; i++ {
+		if rand.Intn(2) == 0 {
+			item, err := getRandomItem()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			upgrades = append(upgrades, item)
+		} else {
+			class, err := getRandomClass()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			upgrades = append(upgrades, class)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	err := json.NewEncoder(w).Encode(upgrades)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func getRandomItem() (Item, error) {
+	var item Item
+	err := db.QueryRow("SELECT ID, Name, Description FROM Items ORDER BY RANDOM() LIMIT 1").Scan(&item.ID, &item.Name, &item.Description)
+	if err != nil {
+		return Item{}, err
+	}
+	return item, nil
+}
+
+func getRandomClass() (Class, error) {
+	var class Class
+	err := db.QueryRow("SELECT ID, Name, SpecialAbilities FROM Classes ORDER BY RANDOM() LIMIT 1").Scan(&class.ID, &class.Name, &class.SpecialAbilities)
+	if err != nil {
+		return Class{}, err
+	}
+	return class, nil
 }
 
 type Leaderboard struct {

@@ -86,5 +86,19 @@ let Server = {
                 return tr;
             }
         }
+    },
+    getNewUpgrades: function () {
+        return new Promise((resolve, reject) => {
+            fetch('/getnewupgrades')
+                .then(response => response.json())
+                .then(data => {
+                    resolve(data);
+                })
+                .catch(error => {
+                    console.error('Error getting new upgrades:', error);
+                    reject(error);
+                });
+        });
     }
+    
 }
