@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -12,7 +11,7 @@ import (
 
 func getLeaderboard(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(`
-        SELECT name, wins FROM teams ORDER BY wins DESC LIMIT 5
+        SELECT name, wins FROM characters ORDER BY wins DESC LIMIT 5
     `)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -51,21 +50,12 @@ func getNewUpgrades(w http.ResponseWriter, r *http.Request) {
 	var upgrades []interface{}
 
 	for i := 0; i < 3; i++ {
-		if rand.Intn(2) == 0 {
-			item, err := getRandomItem()
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			upgrades = append(upgrades, item)
-		} else {
-			class, err := getRandomClass()
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			upgrades = append(upgrades, class)
+		item, err := getRandomItem()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
+		upgrades = append(upgrades, item)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -109,34 +99,65 @@ func createPlayer(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Player %s created.\n", req.Name)
 }
 
-func createTeam(w http.ResponseWriter, r *http.Request) {
+func createCharacter(w http.ResponseWriter, r *http.Request) {
 	// Decode the JSON request body into a struct
-	var req CreateTeamRequest
+	var req CreateCharacterRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if req.TeamName == "" {
-		http.Error(w, "Team name cannot be empty", http.StatusBadRequest)
+	if req.CharacterName == "" {
+		http.Error(w, "Character name cannot be empty", http.StatusBadRequest)
 		return
 	}
 
-	teamId, err := insertTeam(req)
+	characterId, err := insertCharacter(req)
 	if err != nil {
-		fmt.Printf("error inserting team: %v\n", err)
+		fmt.Printf("error inserting character: %v\n", err)
 		return
 	}
 
 	response := struct {
-		TeamID int64 `json:"team_id"`
+		CharacterID int64 `json:"character_id"`
 	}{
-		TeamID: teamId,
+		CharacterID: characterId,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(response)
 
-	fmt.Printf("Team %s[%s] created successfully for player of id %s\n", req.TeamName, strconv.FormatInt(teamId, 10), req.PlayerId)
+	fmt.Printf("Character %s[%s] created successfully for player of id %s\n", req.CharacterName, strconv.FormatInt(characterId, 10), req.PlayerId)
+}
+
+func simulateFight(w http.ResponseWriter, r *http.Request) {
+	var req SimulateFightRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if req.CharacterId == "" {
+		http.Error(w, "CharacterId cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	charInfo, err := getCharacterInfo(req.CharacterId)
+	if err != nil {
+		fmt.Printf("error getting character info: %v\n", err)
+		return
+	}
+	fmt.Printf("%+v\n", charInfo)
+	fmt.Printf("Fight of character %s starting. Searching for opponent...\n", charInfo.Name)
+
+	response := struct {
+		CharacterID string `json:"character_id"`
+	}{
+		CharacterID: req.CharacterId,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
 }

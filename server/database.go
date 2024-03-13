@@ -40,10 +40,21 @@ func initDb() {
 	}
 }
 
-func insertTeam(req CreateTeamRequest) (int64, error) {
-	result, err := db.Exec("INSERT INTO teams (name, wins) VALUES (?, 0)", req.TeamName)
+func insertCharacter(req CreateCharacterRequest) (int64, error) {
+	classInfo, err := getClassInfo(req.ClassId)
 	if err != nil {
-		return 0, fmt.Errorf("error inserting team: %v", err)
+		return 0, fmt.Errorf("error retrieving class info: %v", err)
+	}
+
+	classInfo.Health += randRange(1, 6)
+	classInfo.Initiative += randRange(1, 4)
+	classInfo.Damage += randRange(1, 2)
+	classInfo.Defense += 10
+
+	result, err := db.Exec("INSERT INTO characters (name, wins, class_id, health, initiative, damage, defense, resource, resource_max, lives) VALUES (?, 0, ?, ?, ?, ?, ?, 0, ?, 3)",
+		req.CharacterName, req.ClassId, classInfo.Health, classInfo.Initiative, classInfo.Damage, classInfo.Defense, classInfo.ResourceMax)
+	if err != nil {
+		return 0, fmt.Errorf("error inserting character: %v", err)
 	}
 
 	id, err := result.LastInsertId()
@@ -51,9 +62,9 @@ func insertTeam(req CreateTeamRequest) (int64, error) {
 		return 0, fmt.Errorf("error retrieving last inserted ID: %v", err)
 	}
 
-	_, err = db.Exec("INSERT INTO players_teams (player_id, team_id) VALUES (?, ?)", req.PlayerId, id)
+	_, err = db.Exec("INSERT INTO players_characters (player_id, character_id) VALUES (?, ?)", req.PlayerId, id)
 	if err != nil {
-		return 0, fmt.Errorf("error player team relationship: %v", err)
+		return 0, fmt.Errorf("error player character relationship: %v", err)
 	}
 
 	return id, nil
@@ -69,29 +80,38 @@ func insertPlayer(req CreatePlayerRequest, guid string) error {
 }
 
 func createTables() error {
-	if err := createTeamsTable(); err != nil {
+	if err := createCharacterTable(); err != nil {
 		return err
 	}
 	if err := createPlayersTable(); err != nil {
 		return err
 	}
-	if err := createPlayerTeamsRelTable(); err != nil {
+	if err := createPlayerCharRelTable(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func createTeamsTable() error {
+func createCharacterTable() error {
 	// Create users table
 	_, err := db.Exec(`
-        CREATE TABLE IF NOT EXISTS teams (
-			team_id INTEGER PRIMARY KEY,
-        	name TEXT,
-			wins INTEGER
+        CREATE TABLE IF NOT EXISTS characters (
+			character_id INTEGER PRIMARY KEY,
+        	name TEXT,			
+			wins INTEGER,
+			health INTEGER,
+			initiative INTEGER,
+			damage INTEGER,
+			defense INTEGER,
+			resource INTEGER,
+			resource_max INTEGER,			
+			lives INTEGER,
+			class_id INTEGER,
+			FOREIGN KEY(class_id) REFERENCES Classes(ID)		
         )
     `)
 	if err != nil {
-		return fmt.Errorf("error creating teams table: %v", err)
+		return fmt.Errorf("error creating character table: %v", err)
 	}
 
 	// Create other tables as needed
@@ -113,19 +133,19 @@ func createPlayersTable() error {
 	return nil
 }
 
-func createPlayerTeamsRelTable() error {
+func createPlayerCharRelTable() error {
 	// Create users table
 	_, err := db.Exec(`
-        CREATE TABLE IF NOT EXISTS players_teams (
+        CREATE TABLE IF NOT EXISTS players_characters (
         	player_id INTEGER NOT NULL,
-			team_id INTEGER NOT NULL,
-			PRIMARY KEY (player_id, team_id),
+			character_id INTEGER NOT NULL,
+			PRIMARY KEY (player_id, character_id),
 			FOREIGN KEY (player_id) REFERENCES players(player_id),
-			FOREIGN KEY (team_id) REFERENCES teams(team_id)
+			FOREIGN KEY (character_id) REFERENCES characters(character_id)
         )
     `)
 	if err != nil {
-		return fmt.Errorf("error creating players_teams reliationship table: %v", err)
+		return fmt.Errorf("error creating players_characters reliationship table: %v", err)
 	}
 	return nil
 }
@@ -139,11 +159,22 @@ func getRandomItem() (Item, error) {
 	return item, nil
 }
 
-func getRandomClass() (Class, error) {
-	var class Class
-	err := db.QueryRow("SELECT ID, Name, SpecialAbilities FROM Classes ORDER BY RANDOM() LIMIT 1").Scan(&class.ID, &class.Name, &class.SpecialAbilities)
+func getClassInfo(classId string) (ClassInfo, error) {
+	var info ClassInfo
+	err := db.QueryRow("SELECT Health, Initiative, Damage, Defense, Resource_max FROM Classes WHERE ID = ?", classId).Scan(&info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.ResourceMax)
 	if err != nil {
-		return Class{}, err
+		return ClassInfo{}, err
 	}
-	return class, nil
+	return info, nil
+}
+
+func getCharacterInfo(characterId string) (CharacterInfo, error) {
+	var info CharacterInfo
+	err := db.QueryRow(`SELECT name, wins, health, initiative, damage, defense, resource, resource_max, lives, class_id
+						FROM Characters
+						WHERE character_id = ?`, characterId).Scan(&info.Name, &info.Wins, &info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.Resource, &info.Resource_Max, &info.Lives, &info.ClassId)
+	if err != nil {
+		return CharacterInfo{}, err
+	}
+	return info, nil
 }

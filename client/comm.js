@@ -1,12 +1,12 @@
 let Server = {
-    createTeam: function (playerId, teamName) {
+    createCharacter: function (playerId, characterName, classId) {
         return new Promise((resolve, reject) => {
-            fetch("/createteam", {
+            fetch("/createcharacter", {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ PlayerId: playerId, TeamName: teamName })
+                body: JSON.stringify({ PlayerId: playerId, CharacterName: characterName, ClassId: classId })
             })
                 .then(response => {
                     if (!response.ok) {
@@ -16,10 +16,10 @@ let Server = {
                     return response.json();
                 })
                 .then(data => {
-                    resolve(data.team_id);
+                    resolve(data.character_id);
                 })
                 .catch(error => {
-                    console.error('Error creating team:', error);
+                    console.error('Error creating character:', error);
                     reject(error);
                 })
         });
@@ -56,7 +56,9 @@ let Server = {
             .then(response => response.json())
             .then(data => {
                 // Call function to populate leaderboard with the retrieved data
-                populateLeaderboard(data);
+                if (data) {
+                    populateLeaderboard(data);
+                }
             })
             .catch(error => {
                 console.error('Error fetching leaderboard:', error);
@@ -99,6 +101,31 @@ let Server = {
                     reject(error);
                 });
         });
-    }
-    
+    },
+    simulateFight: function (characterId) {
+        return new Promise((resolve, reject) => {
+            fetch("/simulatefight", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ CharacterId: characterId })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        console.error('Network response was not ok');
+                        return;
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    resolve(data);
+                })
+                .catch(error => {
+                    console.error('Error simulating fight:', error);
+                    reject(error);
+                })
+        });
+    },
+
 }

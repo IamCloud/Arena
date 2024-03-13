@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"net/http"
 	"path/filepath"
 
@@ -21,8 +22,9 @@ func main() {
 
 	http.HandleFunc("/getleaderboard", getLeaderboard)
 	http.HandleFunc("/createplayer", createPlayer)
-	http.HandleFunc("/createteam", createTeam)
+	http.HandleFunc("/createcharacter", createCharacter)
 	http.HandleFunc("/getnewupgrades", getNewUpgrades)
+	http.HandleFunc("/simulatefight", simulateFight)
 
 	rootDir := "./.." // Assuming your main folder is named Arena
 
@@ -35,4 +37,8 @@ func main() {
 
 	fmt.Println("Server ready to go.")
 	log.Fatal(http.ListenAndServe(":8000", nil))
+}
+
+func randRange(min, max int) int {
+    return rand.IntN(max-min) + min
 }

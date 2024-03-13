@@ -51,7 +51,7 @@
   </dialog>
 </template>
 
-<template id="dialog-template-new-team">
+<template id="dialog-template-new-char">
   <dialog open>
     <article>
       <header>
@@ -60,13 +60,24 @@
         </p>
       </header>
       <p id="dialog-text"></p>
-      <form id="new-team-form">      
-        <label>Choose your team name: </label>
-        <input id="team-name-input" type="text" required minlength="3" maxlength="20" />
+      <form id="new-char-form">      
+        <label>Choose your character name: </label>
+        <input id="char-name-input" type="text" required minlength="3" maxlength="20" />
+        <fieldset>
+          <legend>Class:</legend>
+          <label>
+            <input type="radio" name="class" value="1" checked />
+            Warrior
+          </label>
+          <label>
+            <input type="radio" name="class" value="2"/>
+            Mage
+          </label>
+        </fieldset>
       </form>
 
       <footer>
-        <input id="confirm-btn" type="submit" form="new-team-form" value="Confirm"/>
+        <input id="confirm-btn" type="submit" form="new-char-form" value="Confirm"/>
       </footer>
     </article>
   </dialog>

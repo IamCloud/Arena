@@ -1,13 +1,13 @@
 let playerId;
-let teamId;
+let characterId;
 window.addEventListener('load', function () {
     playerId = this.localStorage.getItem(STORED_PLAYERID);
     if (playerId) {
-        teamId = this.localStorage.getItem(STORED_TEAMID);
-        if (teamId) {
+        characterId = this.localStorage.getItem(STORED_CHARID);
+        if (characterId) {
             startGame();
         } else {
-            openNewTeamDialog();
+            openNewCharDialog();
         }
     } else {
         openInitialDialog();
@@ -20,14 +20,16 @@ window.addEventListener('load', function () {
 });
 
 function startGame() {
-    console.log(`Starting game for player ${playerId} with team ${teamId}`);
-    // Temporary for testing:
-    openUpgradeDialog();
+    playerId = this.localStorage.getItem(STORED_PLAYERID);
+    characterId = this.localStorage.getItem(STORED_CHARID);
+    console.log(`Starting game for player ${playerId} with character ${characterId}`);
+    
+    Server.simulateFight(characterId);
 }
 
 function gameOver() {
-    //Remove team local storage
-    localStorage.removeItem(STORED_TEAMID);
+    //Remove character local storage
+    localStorage.removeItem(STORED_CHARID);
 
     // TODO: Save to database for leaderboard
 
@@ -45,7 +47,7 @@ function openInitialDialog() {
     const dialogForm = templateClone.querySelector("#dialog-form");
 
     dialogTitle.textContent = "Welcome !";
-    dialogText.textContent = "Welcome to Arena, a game where you build your ideal medieval fantasy teams to beat other players teams across the world !";
+    dialogText.textContent = "Welcome to Arena, a game where you build up a medieval fantasy character to beat other players characters across the world !";
 
     dialogForm.addEventListener("submit", function (ev) {
         ev.preventDefault();
@@ -62,7 +64,7 @@ function openInitialDialog() {
                 localStorage.setItem(STORED_PLAYERID, playerGuid);
 
                 dialog.close();
-                openNewTeamDialog();
+                openNewCharDialog();
             }).catch(error => {
                 console.error('Error creating player:', error);
             });
@@ -71,37 +73,38 @@ function openInitialDialog() {
     document.body.appendChild(templateClone);
 }
 
-function openNewTeamDialog() {
-    const template = document.querySelector("#dialog-template-new-team");
+function openNewCharDialog() {
+    const template = document.querySelector("#dialog-template-new-char");
 
     const templateClone = template.content.cloneNode(true);
     const dialog = templateClone.querySelector("dialog");
     const dialogTitle = templateClone.querySelector("#dialog-title");
     const dialogText = templateClone.querySelector("#dialog-text");
-    const dialogForm = templateClone.querySelector("#new-team-form");
-    const teamname = templateClone.querySelector("#team-name-input");
+    const dialogForm = templateClone.querySelector("#new-char-form");
+    const charactername = templateClone.querySelector("#char-name-input");
+    const classId = templateClone.querySelector("input[name='class']:checked").value;
 
-    dialogTitle.textContent = "Create a new team !";
+    dialogTitle.textContent = "Create a new character !";
     dialogText.remove();
 
     dialogForm.addEventListener("submit", function (ev) {
         ev.preventDefault();
 
-        if (!teamname.checkValidity()) return;
-        localStorage.setItem(STORED_TEAMID, teamname.value);
+        if (!charactername.checkValidity()) return;
+        localStorage.setItem(STORED_CHARID, charactername.value);
 
-        Server.createTeam(localStorage.getItem(STORED_PLAYERID), teamname.value)
-            .then(teamId => {
-                if (!teamId) {
-                    console.error("createTeam failed.");
+        Server.createCharacter(localStorage.getItem(STORED_PLAYERID), charactername.value, classId)
+            .then(characterId => {
+                if (!characterId) {
+                    console.error("createCharacter failed.");
                     return;
                 }
-                localStorage.setItem(STORED_TEAMID, teamId);
+                localStorage.setItem(STORED_CHARID, characterId);
 
                 dialog.close();
-                openUpgradeDialog();
+                startGame();
             }).catch(error => {
-                console.error('Error creating team:', error);
+                console.error('Error creating character:', error);
             });
 
     });
@@ -126,33 +129,31 @@ function openUpgradeDialog() {
                 data.forEach(upgrade => {
                     createUpgradeCard(upgrade);
                 });
-
-                dialog.close();                
+              
             }).catch(error => {
                 console.error('Error getting new upgrades:', error);
             });
 
             function createUpgradeCard(upgrade) {
-                console.log(upgrade);
+                let div = document.createElement("div");
+                div.innerHTML = upgrade.name;
+                
+                upgradesContainer.appendChild(div);
             }
 
 
     dialogForm.addEventListener("submit", function (ev) {
         ev.preventDefault();
-
-        if (!teamname.checkValidity()) return;
-        localStorage.setItem(STORED_TEAMID, teamname.value);
-
-        Server.createTeam(localStorage.getItem(STORED_PLAYERID), teamname.value)
+        
+        Server.createCharacter(localStorage.getItem(STORED_PLAYERID), teamname.value)
             .then(teamId => {
                 if (!teamId) {
                     console.error("createTeam failed.");
                     return;
                 }
-                localStorage.setItem(STORED_TEAMID, teamId);
+                localStorage.setItem(STORED_CHARID, teamId);
 
                 dialog.close();
-                startGame();
             }).catch(error => {
                 console.error('Error creating team:', error);
             });
