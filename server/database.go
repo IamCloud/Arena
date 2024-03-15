@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 )
 
-func initDb() {
+func initDb(needCreateBots bool) {
 	// Get the current working directory
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -18,26 +18,40 @@ func initDb() {
 	// Construct the path to the database file in the project folder
 	databasePath := filepath.Join(cwd, "database.db")
 
-	// If the database file does not exist, create it
-	if _, err := os.Stat(databasePath); os.IsNotExist(err) {
-		file, err := os.Create(databasePath)
-		if err != nil {
-			log.Fatalf("Error creating database file: %v", err)
-		}
-		file.Close()
-	}
-
 	// Open the SQLite database
 	db, err = sql.Open("sqlite3", databasePath)
 	if err != nil {
 		log.Fatalf("Error opening database: %v", err)
 	}
 
-	// Create required tables
-	err = createTables()
-	if err != nil {
-		log.Fatalf("Error creating tables: %v", err)
+	if needCreateBots {
+		err = createBots()
+		if err != nil {
+			log.Fatalf("Error creating bots: %v", err)
+		}
 	}
+}
+
+func createBots() error {
+	var reqWarr CreateCharacterRequest
+	reqWarr.PlayerId = "1"
+	reqWarr.ClassId = "1"
+	reqWarr.CharacterName = "Warrior bot"
+	_, err := insertCharacter(reqWarr)
+	if err != nil {
+		return fmt.Errorf("error inserting bot character 1: %v", err)
+	}
+	var reqMage CreateCharacterRequest
+	reqMage.PlayerId = "1"
+	reqMage.ClassId = "2"
+	reqMage.CharacterName = "Mage bot"
+	_, err = insertCharacter(reqMage)
+	if err != nil {
+		return fmt.Errorf("error inserting bot character 2: %v", err)
+	}
+	fmt.Println("Bots created successfully.")
+
+	return nil
 }
 
 func insertCharacter(req CreateCharacterRequest) (int64, error) {
@@ -79,77 +93,6 @@ func insertPlayer(req CreatePlayerRequest, guid string) error {
 	return nil
 }
 
-func createTables() error {
-	if err := createCharacterTable(); err != nil {
-		return err
-	}
-	if err := createPlayersTable(); err != nil {
-		return err
-	}
-	if err := createPlayerCharRelTable(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func createCharacterTable() error {
-	// Create users table
-	_, err := db.Exec(`
-        CREATE TABLE IF NOT EXISTS characters (
-			character_id INTEGER PRIMARY KEY,
-        	name TEXT,			
-			wins INTEGER,
-			health INTEGER,
-			initiative INTEGER,
-			damage INTEGER,
-			defense INTEGER,
-			resource INTEGER,
-			resource_max INTEGER,			
-			lives INTEGER,
-			class_id INTEGER,
-			FOREIGN KEY(class_id) REFERENCES Classes(ID)		
-        )
-    `)
-	if err != nil {
-		return fmt.Errorf("error creating character table: %v", err)
-	}
-
-	// Create other tables as needed
-
-	return nil
-}
-
-func createPlayersTable() error {
-	// Create users table
-	_, err := db.Exec(`
-        CREATE TABLE IF NOT EXISTS players (
-        	player_id VARCHAR PRIMARY KEY,
-            name TEXT
-        )
-    `)
-	if err != nil {
-		return fmt.Errorf("error creating players table: %v", err)
-	}
-	return nil
-}
-
-func createPlayerCharRelTable() error {
-	// Create users table
-	_, err := db.Exec(`
-        CREATE TABLE IF NOT EXISTS players_characters (
-        	player_id INTEGER NOT NULL,
-			character_id INTEGER NOT NULL,
-			PRIMARY KEY (player_id, character_id),
-			FOREIGN KEY (player_id) REFERENCES players(player_id),
-			FOREIGN KEY (character_id) REFERENCES characters(character_id)
-        )
-    `)
-	if err != nil {
-		return fmt.Errorf("error creating players_characters reliationship table: %v", err)
-	}
-	return nil
-}
-
 func getRandomItem() (Item, error) {
 	var item Item
 	err := db.QueryRow("SELECT ID, Name, Description FROM Items ORDER BY RANDOM() LIMIT 1").Scan(&item.ID, &item.Name, &item.Description)
@@ -171,7 +114,7 @@ func getClassInfo(classId string) (ClassInfo, error) {
 func getCharacterInfo(characterId string) (CharacterInfo, error) {
 	var info CharacterInfo
 	err := db.QueryRow(`SELECT name, wins, health, initiative, damage, defense, resource, resource_max, lives, class_id
-						FROM Characters
+						FROM characters
 						WHERE character_id = ?`, characterId).Scan(&info.Name, &info.Wins, &info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.Resource, &info.Resource_Max, &info.Lives, &info.ClassId)
 	if err != nil {
 		return CharacterInfo{}, err

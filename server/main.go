@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand/v2"
@@ -17,7 +18,12 @@ func main() {
 	fmt.Println("Server started")
 
 	fmt.Println("Database initializing...")
-	initDb()
+
+	needCreateBots := flag.Bool("bots", false, "Need to create bots")
+	flag.Parse()
+
+	fmt.Println("Need to create bots: ", *needCreateBots)
+	initDb(*needCreateBots)
 	fmt.Println("Database initialised")
 
 	http.HandleFunc("/getleaderboard", getLeaderboard)
@@ -40,5 +46,5 @@ func main() {
 }
 
 func randRange(min, max int) int {
-    return rand.IntN(max-min) + min
+	return rand.IntN(max-min) + min
 }
