@@ -95,7 +95,7 @@ func insertPlayer(req CreatePlayerRequest, guid string) error {
 
 func getRandomItem() (Item, error) {
 	var item Item
-	err := db.QueryRow("SELECT ID, Name, Description FROM Items ORDER BY RANDOM() LIMIT 1").Scan(&item.ID, &item.Name, &item.Description)
+	err := db.QueryRow("SELECT ID, Name, Description FROM items ORDER BY RANDOM() LIMIT 1").Scan(&item.ID, &item.Name, &item.Description)
 	if err != nil {
 		return Item{}, err
 	}
@@ -104,7 +104,7 @@ func getRandomItem() (Item, error) {
 
 func getClassInfo(classId string) (ClassInfo, error) {
 	var info ClassInfo
-	err := db.QueryRow("SELECT Health, Initiative, Damage, Defense, Resource_max FROM Classes WHERE ID = ?", classId).Scan(&info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.ResourceMax)
+	err := db.QueryRow("SELECT Health, Initiative, Damage, Defense, Resource_max FROM classes WHERE ID = ?", classId).Scan(&info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.ResourceMax)
 	if err != nil {
 		return ClassInfo{}, err
 	}
