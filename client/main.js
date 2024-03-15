@@ -23,8 +23,18 @@ function startGame() {
     playerId = this.localStorage.getItem(STORED_PLAYERID);
     characterId = this.localStorage.getItem(STORED_CHARID);
     console.log(`Starting game for player ${playerId} with character ${characterId}`);
-    
-    Server.simulateFight(characterId);
+
+    Server.simulateFight(characterId)
+        .then(data => {
+            if (!data) {
+                console.error("simulateFight failed.");
+                return;
+            }
+            console.log(data);
+
+        }).catch(error => {
+            console.error('Error getting new upgrades:', error);
+        });
 }
 
 function gameOver() {
@@ -116,35 +126,35 @@ function openUpgradeDialog() {
 
     const templateClone = template.content.cloneNode(true);
     const dialog = templateClone.querySelector("dialog");
-    const dialogForm = templateClone.querySelector("#upgrade-form");  
+    const dialogForm = templateClone.querySelector("#upgrade-form");
     const upgradesContainer = dialogForm.querySelector("#upgrades-container");
 
     Server.getNewUpgrades()
-            .then(data => {
-                if (!data) {
-                    console.error("getNewUpgrades failed.");
-                    return;
-                }
+        .then(data => {
+            if (!data) {
+                console.error("getNewUpgrades failed.");
+                return;
+            }
 
-                data.forEach(upgrade => {
-                    createUpgradeCard(upgrade);
-                });
-              
-            }).catch(error => {
-                console.error('Error getting new upgrades:', error);
+            data.forEach(upgrade => {
+                createUpgradeCard(upgrade);
             });
 
-            function createUpgradeCard(upgrade) {
-                let div = document.createElement("div");
-                div.innerHTML = upgrade.name;
-                
-                upgradesContainer.appendChild(div);
-            }
+        }).catch(error => {
+            console.error('Error getting new upgrades:', error);
+        });
+
+    function createUpgradeCard(upgrade) {
+        let div = document.createElement("div");
+        div.innerHTML = upgrade.name;
+
+        upgradesContainer.appendChild(div);
+    }
 
 
     dialogForm.addEventListener("submit", function (ev) {
         ev.preventDefault();
-        
+
         Server.createCharacter(localStorage.getItem(STORED_PLAYERID), teamname.value)
             .then(teamId => {
                 if (!teamId) {

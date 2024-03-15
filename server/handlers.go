@@ -144,20 +144,68 @@ func simulateFight(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	charInfo, err := getCharacterInfo(req.CharacterId)
+	playerChar, err := getCharacterInfo(req.CharacterId)
 	if err != nil {
 		fmt.Printf("error getting character info: %v\n", err)
 		return
 	}
-	fmt.Printf("%+v\n", charInfo)
-	fmt.Printf("Fight of character %s starting. Searching for opponent...\n", charInfo.Name)
+	fmt.Printf("%+v\n", playerChar)
+	fmt.Printf("Fight of character %s starting. Searching for target...\n", playerChar.Name)
 
-	response := struct {
-		CharacterID string `json:"character_id"`
-	}{
-		CharacterID: req.CharacterId,
+	targetChar, err := getOpponentInfo(req.CharacterId, playerChar.Wins)
+	if err != nil {
+		fmt.Printf("error finding target info: %v\n", err)
+		return
 	}
+
+	fmt.Printf("Target found: %s\n", targetChar.Name)
+
+	// Simulate the fight on the server
+	fightResult := simulateFightLogic(&playerChar, &targetChar)
+
+	// Send all fight event data in a single response
+	//fightEventData := prepareFightEventData(fightResult, charInfo, opponentInfo)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(fightResult)
+}
+
+func simulateFightLogic(player *Character, target *Character) FightData {
+	var FightData FightData
+	FightData.StartPlayerInfo = *player
+	FightData.StartOpponentInfo = *target
+
+	// Determine the attacker based on initiative
+	var currentAttacker *Character
+	var currentTarget *Character
+	if player.Initiative > target.Initiative {
+		currentAttacker = player
+		currentTarget = target
+	} else {
+		currentAttacker = target
+		currentTarget = player
+	}
+
+	for {
+		// Check for win condition (either character's health <= 0)
+
+		if player.Health <= 0 || target.Health <= 0 {
+			fmt.Printf("Combat ended!\n")
+			break
+		}
+
+		// Attack logic based on current attacker
+		currentAttacker.Attack(&FightData.Events, currentTarget)
+
+		// Switch for next round
+		if currentAttacker == target {
+			currentAttacker = player
+			currentTarget = target
+		} else {
+			currentAttacker = target
+			currentTarget = player
+		}
+	}
+	return FightData
 }

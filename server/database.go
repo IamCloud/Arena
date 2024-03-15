@@ -111,13 +111,26 @@ func getClassInfo(classId string) (ClassInfo, error) {
 	return info, nil
 }
 
-func getCharacterInfo(characterId string) (CharacterInfo, error) {
-	var info CharacterInfo
+func getCharacterInfo(characterId string) (Character, error) {
+	var info Character
 	err := db.QueryRow(`SELECT name, wins, health, initiative, damage, defense, resource, resource_max, lives, class_id
 						FROM characters
-						WHERE character_id = ?`, characterId).Scan(&info.Name, &info.Wins, &info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.Resource, &info.Resource_Max, &info.Lives, &info.ClassId)
+						WHERE character_id = ?`, characterId).Scan(&info.Name, &info.Wins, &info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.Resource, &info.ResourceMax, &info.Lives, &info.ClassId)
 	if err != nil {
-		return CharacterInfo{}, err
+		return Character{}, err
 	}
 	return info, nil
+}
+
+func getOpponentInfo(playerCharID string, wins int) (Character, error) {
+	var opponentCharInfo Character
+	err := db.QueryRow(`SELECT name, wins, health, initiative, damage, defense, resource, resource_max, lives, class_id
+						FROM characters
+						WHERE character_id != ? AND wins = ?
+						ORDER BY RANDOM()
+						LIMIT 1`, playerCharID, wins).Scan(&opponentCharInfo.Name, &opponentCharInfo.Wins, &opponentCharInfo.Health, &opponentCharInfo.Initiative, &opponentCharInfo.Damage, &opponentCharInfo.Defense, &opponentCharInfo.Resource, &opponentCharInfo.ResourceMax, &opponentCharInfo.Lives, &opponentCharInfo.ClassId)
+	if err != nil {
+		return Character{}, err
+	}
+	return opponentCharInfo, nil
 }
