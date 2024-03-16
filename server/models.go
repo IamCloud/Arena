@@ -54,6 +54,9 @@ func (attacker *Character) Attack(events *[]FightEvent, defender *Character) {
 	if !isMiss {
 		damageDealt = attacker.Damage
 		(*defender).Health -= attacker.Damage
+		if (*defender).Health < 0 {
+			(*defender).Health = 0
+		}
 		fmt.Printf("%s hits %s for %s!\n", attacker.Name, defender.Name, strconv.Itoa(attacker.Damage))
 		fmt.Printf("Target %s current health: %s!\n", defender.Name, strconv.Itoa(defender.Health))
 
