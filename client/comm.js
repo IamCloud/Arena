@@ -52,6 +52,7 @@ let Server = {
 
     // Function to fetch leaderboard data from the Go server
     getLeaderboard: function () {
+        return new Promise((resolve, reject) => {
         fetch('/getleaderboard')
             .then(response => response.json())
             .then(data => {
@@ -59,10 +60,14 @@ let Server = {
                 if (data) {
                     populateLeaderboard(data);
                 }
+                resolve(true);
             })
             .catch(error => {
                 console.error('Error fetching leaderboard:', error);
+                openErrorDialog(`Server connection error. Error fetching leaderboard. Refresh the page and if the issue persists, please contact the developer: nicolasntr11@gmail.com.`);
+                resolve(false);
             });
+        });
 
         function populateLeaderboard(data) {
             const content = document.getElementById('leaderboardContent');

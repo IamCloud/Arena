@@ -22,8 +22,17 @@ window.addEventListener('load', function () {
 
 
     Server.getLeaderboard();
-    window.setInterval(function () {
-        Server.getLeaderboard();
+    var ping = window.setInterval(function () {
+        Server.getLeaderboard()
+            .then(data => {
+                if (!data) {
+                    clearInterval(ping);
+                    return;
+                }
+            }).catch(error => {
+                console.error('Error creating team:', error);
+                clearInterval(ping);
+            });
     }, 1000);
 });
 
@@ -60,11 +69,11 @@ class Character {
 function displayFightEvents(data) {
     console.log(data);
     const wait = (seconds) =>
-    new Promise(resolve =>
-        setTimeout(() => resolve(true), seconds * 1000)
-    );
+        new Promise(resolve =>
+            setTimeout(() => resolve(true), seconds * 1000)
+        );
     const processFightEvents = async (data) => {
-        
+
         for (let i = 0; i < data.length; i++) {
             const event = data[i];
             const eventData = JSON.parse(event.Data);
@@ -87,7 +96,7 @@ function displayFightEvents(data) {
                 case "end":
                     displayCombatEvent(`<b><ins>${eventData.Winner.Name} wins !</ins></b>`);
                     break;
-            }            
+            }
         }
     }
 
@@ -247,5 +256,15 @@ function openUpgradeDialog() {
             });
 
     });
+    document.body.appendChild(templateClone);
+}
+
+function openErrorDialog(msg) {
+    const template = document.querySelector("#dialog-error");
+
+    const templateClone = template.content.cloneNode(true);
+    const errMsg = templateClone.querySelector("#errmsg");
+    errMsg.textContent = msg;
+
     document.body.appendChild(templateClone);
 }
