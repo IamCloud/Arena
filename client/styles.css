@@ -1,15 +1,40 @@
-.common {
-    border: 2px solid grey;
+.container {
+    display: grid;
+    grid-gap: 10px;
+    grid-template-columns: repeat(1fr, 1fr);
 }
-.uncommon {
-    border: 2px solid green;
+
+.info {
+    text-align: center;
+
+    .hp-bar {
+        width: 200px; 
+    }
 }
-.rare {
-    border: 2px solid blue;
+
+#player-info {
+    grid-column: 1;
+    grid-row: 1;
 }
-.epic {
-    border: 2px solid purple;
+
+#opponent-info {
+    grid-column: 2;
+    grid-row: 1;
 }
-.legendary {
-    border: 2px solid gold;
+
+#game-log {
+    height: 300px;
+    overflow: auto;
+    grid-column: 1 / 3;
+    grid-row: 2;
+
+    border: 2px solid azure;
+    border-radius: 20px;
+    padding: 1rem;
+}
+
+
+.leaderboard {
+    grid-column: 1 / 3;
+    grid-row: 3;
 }

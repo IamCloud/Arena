@@ -1,6 +1,13 @@
+let playerInfoEl;
+let opponentInfoEl;
+let gameLogEl;
 let playerId;
 let characterId;
 window.addEventListener('load', function () {
+    playerInfoEl = document.getElementById("player-info");
+    opponentInfoEl = document.getElementById("opponent-info");
+    gameLogEl = document.getElementById("game-log");
+
     playerId = this.localStorage.getItem(STORED_PLAYERID);
     if (playerId) {
         characterId = this.localStorage.getItem(STORED_CHARID);
@@ -12,6 +19,7 @@ window.addEventListener('load', function () {
     } else {
         openInitialDialog();
     }
+
 
     Server.getLeaderboard();
     window.setInterval(function () {
@@ -51,15 +59,59 @@ class Character {
 }
 function displayFightEvents(data) {
     console.log(data);
-
-    for (let i = 0; i < data.length; i++) {
-        const event = data[i];
-        displayCombatEvent(event);
+    const wait = (seconds) =>
+    new Promise(resolve =>
+        setTimeout(() => resolve(true), seconds * 1000)
+    );
+    const processFightEvents = async (data) => {
+        
+        for (let i = 0; i < data.length; i++) {
+            const event = data[i];
+            const eventData = JSON.parse(event.Data);
+            switch (event.Type) {
+                case "init":
+                    displayCombatEvent(`${eventData.StartingCharacterName} starts !`);
+                    break;
+                case "upd":
+                    updateInfo(playerInfoEl, eventData.Player);
+                    updateInfo(opponentInfoEl, eventData.Opponent);
+                    break;
+                case "atk":
+                    await wait(1);
+                    if (eventData.Success) {
+                        displayCombatEvent(`<b>${eventData.AttackerName}</b> attacks and hits ! ${eventData.DefenderName} loses <b>${eventData.Damage}</b> health !`);
+                    } else {
+                        displayCombatEvent(`<b>${eventData.AttackerName}</b> attacks and <i>misses</i> !`);
+                    }
+                    break;
+                case "end":
+                    displayCombatEvent(`<b><ins>${eventData.Winner.Name} wins !</ins></b>`);
+                    break;
+            }            
+        }
     }
+
+    processFightEvents(data);
 
     function displayCombatEvent(str) {
-        console.log(str);
+        let log = document.createElement("small");
+        log.innerHTML = str;
+        gameLogEl.appendChild(log);
+
+        const br = document.createElement("br");
+        gameLogEl.appendChild(br);
+
+        gameLogEl.scrollTop = gameLogEl.scrollHeight;
     }
+
+    function updateInfo(infoEl, data) {
+        infoEl.querySelector(".character-name").textContent = data.Name;
+        infoEl.querySelector(".class-name").textContent = `Class: ${data.ClassId}`;
+        infoEl.querySelector(".hp").textContent = `Health: ${data.Health}/${data.HealthMax}`;
+        infoEl.querySelector(".hp-bar").setAttribute("value", data.Health);
+        infoEl.querySelector(".hp-bar").setAttribute("max", data.HealthMax);
+    }
+
 }
 
 
@@ -68,7 +120,6 @@ function gameOver() {
     //Remove character local storage
     localStorage.removeItem(STORED_CHARID);
 
-    // TODO: Save to database for leaderboard
 
     // TODO: Open gameover dialog
 

@@ -116,6 +116,8 @@ func getCharacterInfo(characterId string) (Character, error) {
 	err := db.QueryRow(`SELECT name, wins, health, initiative, damage, defense, resource, resource_max, lives, class_id
 						FROM characters
 						WHERE character_id = ?`, characterId).Scan(&info.Name, &info.Wins, &info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.Resource, &info.ResourceMax, &info.Lives, &info.ClassId)
+
+	info.HealthMax = info.Health
 	if err != nil {
 		return Character{}, err
 	}
@@ -129,6 +131,7 @@ func getOpponentInfo(playerCharID string, wins int) (Character, error) {
 						WHERE character_id != ? AND wins = ?
 						ORDER BY RANDOM()
 						LIMIT 1`, playerCharID, wins).Scan(&opponentCharInfo.Name, &opponentCharInfo.Wins, &opponentCharInfo.Health, &opponentCharInfo.Initiative, &opponentCharInfo.Damage, &opponentCharInfo.Defense, &opponentCharInfo.Resource, &opponentCharInfo.ResourceMax, &opponentCharInfo.Lives, &opponentCharInfo.ClassId)
+	opponentCharInfo.HealthMax = opponentCharInfo.Health
 	if err != nil {
 		return Character{}, err
 	}

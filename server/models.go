@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	HIT_THRESHOLD   = 15
+	HIT_THRESHOLD   = 20
 	EV_TP_ATK       = "atk"
 	EV_TP_INIT      = "init"
 	EV_TP_END       = "end"
@@ -33,6 +33,7 @@ type Character struct {
 	Name        string
 	Wins        int
 	Health      int
+	HealthMax   int
 	Initiative  int
 	Damage      int
 	Defense     int

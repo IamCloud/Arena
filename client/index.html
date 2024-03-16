@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark" />
   <title>Arena</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+  <link rel="stylesheet" href="styles.css" />
   <script src="consts.js"></script>
   <script src="comm.js"></script>
   <script src="main.js"></script>
@@ -14,19 +15,41 @@
 </head>
 
 <body>
+  <h1 class="title">Arena</h1>
   <main class="container">
-    <h1 class="title">Arena</h1>
 
-    <h2>Best teams of all time</h2>
-    <table id="leaderboard">
-      <thead>
-        <tr>
-          <th>Team name</th>          
-          <th>Wins</th>
-        </tr>
-      </thead>
-      <tbody id="leaderboardContent"></tbody>
-    </table>
+    <div id="player-info" class="info">
+      <h2 class="player-name"></h2>
+      <p class="character-name"></p>
+      <p class="class-name"></p>
+      <p class="hp"></p>
+      <progress class="hp-bar"></progress>
+    </div>
+
+    <div id="opponent-info" class="info">
+      <h2 class="player-name"></h2>
+      <p class="character-name"></p>
+      <p class="class-name"></p>
+      <p class="hp"></p>
+      <progress class="hp-bar"></progress>
+    </div>
+
+    <div id="game-log">
+
+    </div>
+
+    <div class="leaderboard">
+      <h4>Best teams of all time</h4>
+      <table id="leaderboard">
+        <thead>
+          <tr>
+            <th>Team name</th>
+            <th>Wins</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardContent"></tbody>
+      </table>
+    </div>
   </main>
 </body>
 
@@ -39,13 +62,13 @@
         </p>
       </header>
       <p id="dialog-text"></p>
-      <form id="dialog-form">  
+      <form id="dialog-form">
         <label>Choose your player name: </label>
-        <input id="player-name-input" type="text" required minlength="3" maxlength="20" />      
+        <input id="player-name-input" type="text" required minlength="3" maxlength="20" />
       </form>
 
       <footer>
-        <input id="confirm-btn" type="submit" form="dialog-form" value="Confirm"/>
+        <input id="confirm-btn" type="submit" form="dialog-form" value="Confirm" />
       </footer>
     </article>
   </dialog>
@@ -60,7 +83,7 @@
         </p>
       </header>
       <p id="dialog-text"></p>
-      <form id="new-char-form">      
+      <form id="new-char-form">
         <label>Choose your character name: </label>
         <input id="char-name-input" type="text" required minlength="3" maxlength="20" />
         <fieldset>
@@ -70,14 +93,14 @@
             Warrior
           </label>
           <label>
-            <input type="radio" name="class" value="2"/>
+            <input type="radio" name="class" value="2" />
             Mage
           </label>
         </fieldset>
       </form>
 
       <footer>
-        <input id="confirm-btn" type="submit" form="new-char-form" value="Confirm"/>
+        <input id="confirm-btn" type="submit" form="new-char-form" value="Confirm" />
       </footer>
     </article>
   </dialog>
@@ -92,14 +115,14 @@
         </p>
       </header>
       <p id="dialog-text"></p>
-      <form id="upgrade-form">              
+      <form id="upgrade-form">
         <div id="upgrades-container" class="grid">
 
         </div>
       </form>
 
       <footer>
-        <input id="confirm-btn" type="submit" form="upgrade-form" value="Confirm"/>
+        <input id="confirm-btn" type="submit" form="upgrade-form" value="Confirm" />
       </footer>
     </article>
   </dialog>
