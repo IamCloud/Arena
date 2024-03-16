@@ -171,41 +171,80 @@ func simulateFight(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(fightResult)
 }
 
-func simulateFightLogic(player *Character, target *Character) FightData {
-	var FightData FightData
-	FightData.StartPlayerInfo = *player
-	FightData.StartOpponentInfo = *target
+func simulateFightLogic(player, opponent *Character) []FightEvent {
+	var fightEvents []FightEvent
+	attacker, defender := determineInitialAttacker(player, opponent)
 
-	// Determine the attacker based on initiative
-	var currentAttacker *Character
-	var currentTarget *Character
-	if player.Initiative > target.Initiative {
-		currentAttacker = player
-		currentTarget = target
-	} else {
-		currentAttacker = target
-		currentTarget = player
-	}
+	fightEvents = append(fightEvents,
+		charactersUpdateEvent(player, opponent),
+		initiativeEvent(attacker.Name),
+	)
 
 	for {
-		// Check for win condition (either character's health <= 0)
-
-		if player.Health <= 0 || target.Health <= 0 {
-			fmt.Printf("Combat ended!\n")
+		if fightEnded(player, opponent) {
+			winner := getWinner(player, opponent)
+			if winner == player {
+				player.Wins += 1
+			}
+			fightEvents = append(fightEvents, combatEndEvent(winner))
 			break
 		}
 
-		// Attack logic based on current attacker
-		currentAttacker.Attack(&FightData.Events, currentTarget)
+		attacker.Attack(&fightEvents, defender)
+		fightEvents = append(fightEvents, charactersUpdateEvent(player, opponent))
 
-		// Switch for next round
-		if currentAttacker == target {
-			currentAttacker = player
-			currentTarget = target
-		} else {
-			currentAttacker = target
-			currentTarget = player
-		}
+		attacker, defender = swapAttackerAndDefender(attacker, defender)
 	}
-	return FightData
+
+	return fightEvents
+}
+
+// Helper functions for readability and potential reusability:
+
+func determineInitialAttacker(player, opponent *Character) (*Character, *Character) {
+	if player.Initiative > opponent.Initiative {
+		return player, opponent
+	}
+	return opponent, player
+}
+
+func initiativeEvent(startingCharacterName string) FightEvent {
+	initEvent := InitiativeEvent{StartingCharacterName: startingCharacterName}
+	return createEvent(EV_TP_INIT, initEvent)
+}
+
+func fightEnded(player, opponent *Character) bool {
+	return player.Health <= 0 || opponent.Health <= 0
+}
+
+func getWinner(player, opponent *Character) *Character {
+	if player.Health > 0 {
+		return player
+	}
+	return opponent
+}
+
+func combatEndEvent(winner *Character) FightEvent {
+	endEvent := CombatEndEvent{Winner: *winner}
+	return createEvent(EV_TP_END, endEvent)
+}
+
+func charactersUpdateEvent(player, opponent *Character) FightEvent {
+	updateCharsEvent := UpdateCharactersEvent{*player, *opponent}
+	return createEvent(EV_TP_UPD_CHARS, updateCharsEvent)
+}
+
+func swapAttackerAndDefender(attacker, defender *Character) (*Character, *Character) {
+	return defender, attacker
+}
+
+// Generic event creation for potential reuse:
+
+func createEvent(eventType string, data interface{}) FightEvent {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error marshalling data:", err)
+		// Handle error appropriately
+	}
+	return FightEvent{Type: eventType, Data: string(jsonData)}
 }

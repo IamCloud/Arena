@@ -30,12 +30,39 @@ function startGame() {
                 console.error("simulateFight failed.");
                 return;
             }
-            console.log(data);
+            displayFightEvents(data);
 
         }).catch(error => {
             console.error('Error getting new upgrades:', error);
         });
 }
+
+class Character {
+    constructor(name, wins, health, initiative, lives, resource, resource_max, class_id) {
+        this.name = name;
+        this.wins = wins;
+        this.health = health;
+        this.initiative = initiative;
+        this.lives = lives;
+        this.resource = resource;
+        this.resource_max = resource_max;
+        this.class_id = class_id;
+    }
+}
+function displayFightEvents(data) {
+    console.log(data);
+
+    for (let i = 0; i < data.length; i++) {
+        const event = data[i];
+        displayCombatEvent(event);
+    }
+
+    function displayCombatEvent(str) {
+        console.log(str);
+    }
+}
+
+
 
 function gameOver() {
     //Remove character local storage

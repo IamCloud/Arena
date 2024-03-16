@@ -1,12 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 const (
-	HIT_THRESHOLD = 15
+	HIT_THRESHOLD   = 15
+	EV_TP_ATK       = "atk"
+	EV_TP_INIT      = "init"
+	EV_TP_END       = "end"
+	EV_TP_UPD_CHARS = "upd"
 )
 
 type Item struct {
@@ -36,20 +42,35 @@ type Character struct {
 	ClassId     int
 }
 
-func (c *Character) Attack(events *[]FightEvent, target *Character) {
-	fmt.Printf("%s attacks %s!\n", c.Name, target.Name)
+func (attacker *Character) Attack(events *[]FightEvent, defender *Character) {
+	var desc strings.Builder
 
-	isMiss := randRange(1, 20)+target.Defense > HIT_THRESHOLD
+	var damageDealt int = 0
+	fmt.Printf("%s attacks %s!\n", attacker.Name, defender.Name)
+
+	roll := randRange(1, 20)
+	isMiss := roll+defender.Defense > HIT_THRESHOLD
 	if !isMiss {
-		(*target).Health -= c.Damage
-		fmt.Printf("%s hits %s for %s!\n", c.Name, target.Name, strconv.Itoa(c.Damage))
-		fmt.Printf("Target %s current health: %s!\n", target.Name, strconv.Itoa(target.Health))
+		damageDealt = attacker.Damage
+		(*defender).Health -= attacker.Damage
+		fmt.Printf("%s hits %s for %s!\n", attacker.Name, defender.Name, strconv.Itoa(attacker.Damage))
+		fmt.Printf("Target %s current health: %s!\n", defender.Name, strconv.Itoa(defender.Health))
+
+		desc.WriteString(fmt.Sprintf("%s rolls a %s + (%s), fails to defend and receives %s damage!", defender.Name, strconv.Itoa(roll), strconv.Itoa(defender.Defense), strconv.Itoa(attacker.Damage)))
 	} else {
-		fmt.Printf("%s misses %s\n", c.Name, target.Name)
+		fmt.Printf("%s misses %s\n", attacker.Name, defender.Name)
+		desc.WriteString(fmt.Sprintf("%s rolls a %s + (%s) and defends the attack !", defender.Name, strconv.Itoa(roll), strconv.Itoa(defender.Defense)))
 	}
 
-	event := FightEvent{Defender: target.Name, Hit: !isMiss, DmgReceived: c.Damage}
-	*events = append(*events, event)
+	event := AttackEvent{AttackerName: attacker.Name, DefenderName: defender.Name, Success: !isMiss, Damage: damageDealt}
+	jsonData, err := json.Marshal(event)
+	if err != nil {
+		fmt.Println("Error marshalling data:", err)
+		return
+	}
+
+	fightEvent := FightEvent{Type: EV_TP_ATK, Data: string(jsonData)}
+	*events = append(*events, fightEvent)
 }
 
 type Player struct {
@@ -68,20 +89,28 @@ type Classes struct {
 	} `json:"special_abilities"`
 }
 
-type SpecialAbility struct {
-	Name        string
-	Description string
-}
-
 type FightData struct {
-	StartPlayerInfo   Character
-	StartOpponentInfo Character
-	Events            []FightEvent
+	Events []FightEvent
 }
 type FightEvent struct {
-	Defender    string
-	Hit         bool
-	DmgReceived int
+	Type string
+	Data string
+}
+type InitiativeEvent struct {
+	StartingCharacterName string
+}
+type CombatEndEvent struct {
+	Winner Character
+}
+type AttackEvent struct {
+	AttackerName string
+	DefenderName string
+	Success      bool
+	Damage       int
+}
+type UpdateCharactersEvent struct {
+	Player   Character
+	Opponent Character
 }
 
 type Leaderboard struct {
