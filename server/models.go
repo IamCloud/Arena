@@ -127,8 +127,9 @@ type UpdateCharactersEvent struct {
 }
 
 type Leaderboard struct {
-	Name string
-	Wins int
+	PlayerName    string
+	CharacterName string
+	Wins          int
 }
 
 type CreatePlayerRequest struct {
@@ -139,6 +140,7 @@ type CreateCharacterRequest struct {
 	PlayerId      string
 	CharacterName string
 	ClassId       string
+	Wins          string
 }
 
 type SimulateFightRequest struct {

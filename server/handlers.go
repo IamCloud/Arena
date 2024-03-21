@@ -11,9 +11,16 @@ import (
 
 func getLeaderboard(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.Query(`
-        SELECT name, wins FROM characters ORDER BY wins DESC LIMIT 5
+        SELECT p.name, c.name, c.wins 
+		FROM characters c
+		INNER JOIN players_characters pc ON c.character_id = pc.character_id
+		INNER JOIN players p ON p.player_id = pc.player_id
+		WHERE p.player_id != '1'
+		ORDER BY c.wins DESC 
+		LIMIT 10
     `)
 	if err != nil {
+		fmt.Printf("error getting leaderboard top 10: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -25,7 +32,8 @@ func getLeaderboard(w http.ResponseWriter, r *http.Request) {
 	// Iterate through the rows and append each team to the slice
 	for rows.Next() {
 		var leaderboard Leaderboard
-		if err := rows.Scan(&leaderboard.Name, &leaderboard.Wins); err != nil {
+		if err := rows.Scan(&leaderboard.PlayerName, &leaderboard.CharacterName, &leaderboard.Wins); err != nil {
+			fmt.Printf("error filling leaderboard rows: %v\n", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -113,6 +121,7 @@ func createCharacter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	req.Wins = "0"
 	characterId, err := insertCharacter(req)
 	if err != nil {
 		fmt.Printf("error inserting character: %v\n", err)
@@ -152,16 +161,16 @@ func simulateFight(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("%+v\n", playerChar)
 	fmt.Printf("Fight of character %s starting. Searching for target...\n", playerChar.Name)
 
-	targetChar, err := getOpponentInfo(req.CharacterId, playerChar.Wins)
+	opponentChar, err := getOpponentInfo(req.CharacterId, playerChar.Wins)
 	if err != nil {
-		fmt.Printf("error finding target info: %v\n", err)
+		fmt.Printf("error finding opponent info: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Target found: %s\n", targetChar.Name)
+	fmt.Printf("Opponent found: %s\n", opponentChar.Name)
 
 	// Simulate the fight on the server
-	fightResult := simulateFightLogic(&playerChar, &targetChar)
+	fightResult := simulateFightLogic(&playerChar, &opponentChar)
 
 	// Send all fight event data in a single response
 	//fightEventData := prepareFightEventData(fightResult, charInfo, opponentInfo)

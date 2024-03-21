@@ -19,11 +19,11 @@ func main() {
 
 	fmt.Println("Database initializing...")
 
-	needCreateBots := flag.Bool("bots", false, "Need to create bots")
+	needResetDb := flag.Bool("resetdb", false, "Reset Database")
 	flag.Parse()
 
-	fmt.Println("Need to create bots: ", *needCreateBots)
-	initDb(*needCreateBots)
+	fmt.Println("Need to reset database: ", *needResetDb)
+	initDb(*needResetDb)
 	fmt.Println("Database initialised")
 
 	http.HandleFunc("/getleaderboard", getLeaderboard)

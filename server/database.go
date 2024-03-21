@@ -6,13 +6,32 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
-func initDb(needCreateBots bool) {
+func initDb(needReset bool) {
+	err := openDb()
+	if err != nil {
+		log.Fatalf("Error opening database: %v", err)
+	}
+
+	if needReset {
+		err = resetDb()
+		if err != nil {
+			log.Fatalf("Error resetting database: %v", err)
+		}
+		err = createBots()
+		if err != nil {
+			log.Fatalf("Error creating bots: %v", err)
+		}
+	}
+}
+
+func openDb() error {
 	// Get the current working directory
 	cwd, err := os.Getwd()
 	if err != nil {
-		log.Fatalf("Error getting current working directory: %v", err)
+		return err
 	}
 
 	// Construct the path to the database file in the project folder
@@ -21,35 +40,77 @@ func initDb(needCreateBots bool) {
 	// Open the SQLite database
 	db, err = sql.Open("sqlite3", databasePath)
 	if err != nil {
-		log.Fatalf("Error opening database: %v", err)
+		return err
 	}
 
-	if needCreateBots {
-		err = createBots()
-		if err != nil {
-			log.Fatalf("Error creating bots: %v", err)
-		}
+	return nil
+}
+
+func deleteSqliteDatabase() error {
+	// Check if the file exists
+	if _, err := os.Stat("database.db"); os.IsNotExist(err) {
+		return nil // Database file doesn't exist, nothing to delete
+	} else if err != nil {
+		return err // Handle other errors during stat
 	}
+
+	// Delete the file if it exists
+	err := os.Remove("database.db")
+	if err != nil {
+		return err // Handle deletion errors
+	}
+	return nil
+}
+
+func resetDb() error {
+	err := deleteSqliteDatabase()
+	if err != nil {
+		return err
+	}
+
+	err = openDb()
+	if err != nil {
+		return err
+	}
+
+	// Read the script file
+	scriptBytes, err := os.ReadFile("DbInit.sql")
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(string(scriptBytes))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func createBots() error {
-	var reqWarr CreateCharacterRequest
-	reqWarr.PlayerId = "1"
-	reqWarr.ClassId = "1"
-	reqWarr.CharacterName = "Warrior bot"
-	_, err := insertCharacter(reqWarr)
-	if err != nil {
-		return fmt.Errorf("error inserting bot character 1: %v", err)
+	for i := 0; i < 100; i++ {
+		err := createBot(1, i)
+		if err != nil {
+			return err
+		}
+		err = createBot(2, i)
+		if err != nil {
+			return err
+		}
 	}
-	var reqMage CreateCharacterRequest
-	reqMage.PlayerId = "1"
-	reqMage.ClassId = "2"
-	reqMage.CharacterName = "Mage bot"
-	_, err = insertCharacter(reqMage)
+
+	return nil
+}
+func createBot(class_id int, wins int) error {
+	var req CreateCharacterRequest
+	req.PlayerId = "1"
+	req.ClassId = strconv.Itoa(class_id)
+	req.CharacterName = "Bot (" + strconv.Itoa(wins) + ")"
+	req.Wins = strconv.Itoa(wins)
+	_, err := insertCharacter(req)
 	if err != nil {
-		return fmt.Errorf("error inserting bot character 2: %v", err)
+		return err
 	}
-	fmt.Println("Bots created successfully.")
 
 	return nil
 }
@@ -65,8 +126,8 @@ func insertCharacter(req CreateCharacterRequest) (int64, error) {
 	classInfo.Damage += randRange(1, 2)
 	classInfo.Defense += 10
 
-	result, err := db.Exec("INSERT INTO characters (name, wins, class_id, health, initiative, damage, defense, resource, resource_max, lives) VALUES (?, 0, ?, ?, ?, ?, ?, 0, ?, 3)",
-		req.CharacterName, req.ClassId, classInfo.Health, classInfo.Initiative, classInfo.Damage, classInfo.Defense, classInfo.ResourceMax)
+	result, err := db.Exec("INSERT INTO characters (name, wins, class_id, health, initiative, damage, defense, resource, resource_max, lives) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, 3)",
+		req.CharacterName, req.Wins, req.ClassId, classInfo.Health, classInfo.Initiative, classInfo.Damage, classInfo.Defense, classInfo.ResourceMax)
 	if err != nil {
 		return 0, fmt.Errorf("error inserting character: %v", err)
 	}

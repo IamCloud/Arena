@@ -21,8 +21,8 @@ window.addEventListener('load', function () {
     }
 
 
-    Server.getLeaderboard();
-    var ping = window.setInterval(function () {
+    //Server.getLeaderboard();
+    /*var ping = window.setInterval(function () {
         Server.getLeaderboard()
             .then(data => {
                 if (!data) {
@@ -33,10 +33,11 @@ window.addEventListener('load', function () {
                 console.error('Error creating team:', error);
                 clearInterval(ping);
             });
-    }, 1000);
+    }, 1000);*/
 });
 
 function startGame() {
+    Server.getLeaderboard()
     playerId = this.localStorage.getItem(STORED_PLAYERID);
     characterId = this.localStorage.getItem(STORED_CHARID);
     console.log(`Starting game for player ${playerId} with character ${characterId}`);
@@ -48,7 +49,7 @@ function startGame() {
                 return;
             }
             displayFightEvents(data);
-
+            Server.getLeaderboard()
         }).catch(error => {
             console.error('Error getting new upgrades:', error);
         });

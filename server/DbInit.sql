@@ -55,7 +55,7 @@ INSERT INTO classes(ID, Name, Health, Initiative, Damage, Defense, Resource_Max,
         (1, 'Warrior', 20, 8, 2, 3, 50, '[{"name": "Charge", "description": "Enemy skips next turn"}, {"name": "Shield up", "description": "Ready to defend the next attack."}]'),
         (2, 'Mage', 10, 12, 4, 0, 40, '[{"name": "Fireball", "description": "Launch a fiery projectile."}, {"name": "Mana shield", "description": "Temporary shield that absorbs damage."}]');
 INSERT INTO items(Name, Description) VALUES
-    ('Hamburger', '+2hp'),
+    ('Hamburger', '+2 hp'),
     ('Telescope', '+2 initiative'),
     ('Obsidian ring', '+1 damage'),        
     ('Stick pasta to body', '+1 defense'),    
