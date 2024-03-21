@@ -171,27 +171,28 @@ func simulateFight(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(fightResult)
 }
 
-func simulateFightLogic(player, opponent *Character) []FightEvent {
+func simulateFightLogic(playerChar, opponentChar *Character) []FightEvent {
 	var fightEvents []FightEvent
-	attacker, defender := determineInitialAttacker(player, opponent)
+	attacker, defender := determineInitialAttacker(playerChar, opponentChar)
 
 	fightEvents = append(fightEvents,
-		charactersUpdateEvent(player, opponent),
+		charactersUpdateEvent(playerChar, opponentChar),
 		initiativeEvent(attacker.Name),
 	)
 
 	for {
-		if fightEnded(player, opponent) {
-			winner := getWinner(player, opponent)
-			if winner == player {
-				player.Wins += 1
+		if fightEnded(playerChar, opponentChar) {
+			winner := getWinner(playerChar, opponentChar)
+			if winner == playerChar {
+				playerChar.Wins += 1
+				playerChar.incrWins()
 			}
 			fightEvents = append(fightEvents, combatEndEvent(winner))
 			break
 		}
 
 		attacker.Attack(&fightEvents, defender)
-		fightEvents = append(fightEvents, charactersUpdateEvent(player, opponent))
+		fightEvents = append(fightEvents, charactersUpdateEvent(playerChar, opponentChar))
 
 		attacker, defender = swapAttackerAndDefender(attacker, defender)
 	}

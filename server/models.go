@@ -30,6 +30,7 @@ type ClassInfo struct {
 }
 
 type Character struct {
+	CharacterId int
 	Name        string
 	Wins        int
 	Health      int
@@ -41,6 +42,14 @@ type Character struct {
 	ResourceMax int
 	Lives       int
 	ClassId     int
+}
+
+func (winner *Character) incrWins() {
+	_, err := db.Exec("UPDATE characters SET wins = wins + 1 WHERE character_id = ?", winner.CharacterId)
+	if err != nil {
+		fmt.Println("error incrementing character wins.", err)
+		return
+	}
 }
 
 func (attacker *Character) Attack(events *[]FightEvent, defender *Character) {
