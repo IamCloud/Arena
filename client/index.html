@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark" />
-  <title>Arena</title>
+  <title>Legends of Auro</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
   <link rel="stylesheet" href="styles.css" />
   <script src="consts.js"></script>
@@ -15,41 +15,47 @@
 </head>
 
 <body>
-  <h1 class="title">Arena</h1>
+
   <main class="container">
+    <h1 class="title" style="text-align:center">Legends of Auro</h1>
+    <div class="grid">
+      <div id="player-info" class="info">
+        <h2 class="player-name"></h2>
+        <p class="character-name"></p>
+        <p class="class-name"></p>
+        <p class="hp"></p>
+        <progress class="hp-bar"></progress>
+      </div>
 
-    <div id="player-info" class="info">
-      <h2 class="player-name"></h2>
-      <p class="character-name"></p>
-      <p class="class-name"></p>
-      <p class="hp"></p>
-      <progress class="hp-bar"></progress>
-    </div>
+      <div id="actions">
+        <input id="fightBtn" type="button" value="Fight !"></input>
+      </div>
 
-    <div id="opponent-info" class="info">
-      <h2 class="player-name"></h2>
-      <p class="character-name"></p>
-      <p class="class-name"></p>
-      <p class="hp"></p>
-      <progress class="hp-bar"></progress>
-    </div>
+      <div id="opponent-info" class="info">
+        <h2 class="player-name"></h2>
+        <p class="character-name"></p>
+        <p class="class-name"></p>
+        <p class="hp"></p>
+        <progress class="hp-bar"></progress>
+      </div>
 
-    <div id="game-log">
+      <div id="game-log">
 
-    </div>
+      </div>
 
-    <div class="leaderboard">
-      <h4>Best teams of all time</h4>
-      <table id="leaderboard">
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Character</th>
-            <th>Wins</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboardContent"></tbody>
-      </table>
+      <div class="leaderboard">
+        <h4>Best teams of all time</h4>
+        <table id="leaderboard">
+          <thead>
+            <tr>
+              <th>Player</th>
+              <th>Character</th>
+              <th>Wins</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardContent"></tbody>
+        </table>
+      </div>
     </div>
   </main>
 </body>

@@ -3,23 +3,32 @@ let opponentInfoEl;
 let gameLogEl;
 let playerId;
 let characterId;
+let fightInProgress = false;
+let fightBtn;
+
 window.addEventListener('load', function () {
     playerInfoEl = document.getElementById("player-info");
     opponentInfoEl = document.getElementById("opponent-info");
     gameLogEl = document.getElementById("game-log");
+    fightBtn = document.getElementById("fightBtn");
 
     playerId = this.localStorage.getItem(STORED_PLAYERID);
     if (playerId) {
         characterId = this.localStorage.getItem(STORED_CHARID);
         if (characterId) {
-            startGame();
+            Server.getLeaderboard();            
         } else {
             openNewCharDialog();
         }
     } else {
         openInitialDialog();
     }
-
+   
+    fightBtn.addEventListener("click", (ev) => {
+        if (!fightInProgress) {
+            startFight();
+        }
+    });
 
     //Server.getLeaderboard();
     /*var ping = window.setInterval(function () {
@@ -36,11 +45,14 @@ window.addEventListener('load', function () {
     }, 1000);*/
 });
 
-function startGame() {
-    Server.getLeaderboard()
+function startFight() {
+    gameLogEl.innerText = "";
+    fightInProgress = true;
+    fightBtn.setAttribute("disabled", "");
+
     playerId = this.localStorage.getItem(STORED_PLAYERID);
     characterId = this.localStorage.getItem(STORED_CHARID);
-    console.log(`Starting game for player ${playerId} with character ${characterId}`);
+    console.log(`Starting fight for player ${playerId} with character ${characterId}`);
 
     Server.simulateFight(characterId)
         .then(data => {
@@ -49,10 +61,16 @@ function startGame() {
                 return;
             }
             displayFightEvents(data);
-            Server.getLeaderboard()
+            
         }).catch(error => {
             console.error('Error getting new upgrades:', error);
         });
+}
+
+function endFight() {
+    Server.getLeaderboard();
+    fightBtn.removeAttribute("disabled");
+    fightInProgress = false;
 }
 
 class Character {
@@ -99,6 +117,8 @@ function displayFightEvents(data) {
                     break;
             }
         }
+
+        endFight();
     }
 
     processFightEvents(data);
@@ -200,7 +220,7 @@ function openNewCharDialog() {
                 localStorage.setItem(STORED_CHARID, characterId);
 
                 dialog.close();
-                startGame();
+                startFight();
             }).catch(error => {
                 console.error('Error creating character:', error);
             });
