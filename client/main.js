@@ -67,10 +67,14 @@ function startFight() {
         });
 }
 
-function endFight() {
+function endFight(playerWon) {
     Server.getLeaderboard();
     fightBtn.removeAttribute("disabled");
     fightInProgress = false;
+
+    if (playerWon) {
+        openUpgradeDialog();
+    }
 }
 
 class Character {
@@ -87,12 +91,13 @@ class Character {
 }
 function displayFightEvents(data) {
     console.log(data);
-    const wait = (seconds) =>
+    const wait = (ms) =>
         new Promise(resolve =>
-            setTimeout(() => resolve(true), seconds * 1000)
+            setTimeout(() => resolve(true), ms)
         );
     const processFightEvents = async (data) => {
 
+        let playerWins = false;
         for (let i = 0; i < data.length; i++) {
             const event = data[i];
             const eventData = JSON.parse(event.Data);
@@ -105,7 +110,7 @@ function displayFightEvents(data) {
                     updateInfo(opponentInfoEl, eventData.Opponent);
                     break;
                 case "atk":
-                    await wait(1);
+                    await wait(FIGHT_DELAY_MS);
                     if (eventData.Success) {
                         displayCombatEvent(`<b>${eventData.AttackerName}</b> attacks and hits ! ${eventData.DefenderName} loses <b>${eventData.Damage}</b> health !`);
                     } else {
@@ -114,16 +119,19 @@ function displayFightEvents(data) {
                     break;
                 case "end":
                     displayCombatEvent(`<b><ins>${eventData.Winner.Name} wins !</ins></b>`);
+                    if (eventData.Winner.CharacterId.toString() === characterId) {
+                        playerWins = true;
+                    }
                     break;
                 case "dead":
-                    displayCombatEvent(`<b>Your character dies !</b>`);
-                    await wait(1);
+                    displayCombatEvent(`<b>Your character dies !</b>`);                    
+                    await wait(FIGHT_DELAY_MS);
                     gameOver();
                     break;
             }
         }
 
-        endFight();
+        endFight(playerWins);
     }
 
     processFightEvents(data);
@@ -272,7 +280,8 @@ function openUpgradeDialog() {
     dialogForm.addEventListener("submit", function (ev) {
         ev.preventDefault();
 
-        Server.createCharacter(localStorage.getItem(STORED_PLAYERID), teamname.value)
+        dialog.close();
+        /*Server.createCharacter(localStorage.getItem(STORED_PLAYERID), teamname.value)
             .then(teamId => {
                 if (!teamId) {
                     console.error("createTeam failed.");
@@ -283,7 +292,7 @@ function openUpgradeDialog() {
                 dialog.close();
             }).catch(error => {
                 console.error('Error creating team:', error);
-            });
+            });*/
 
     });
     document.body.appendChild(templateClone);
