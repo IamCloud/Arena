@@ -16,14 +16,14 @@ window.addEventListener('load', function () {
     if (playerId) {
         characterId = this.localStorage.getItem(STORED_CHARID);
         if (characterId) {
-            Server.getLeaderboard();            
+            Server.getLeaderboard();
         } else {
             openNewCharDialog();
         }
     } else {
         openInitialDialog();
     }
-   
+
     fightBtn.addEventListener("click", (ev) => {
         if (!fightInProgress) {
             startFight();
@@ -61,7 +61,7 @@ function startFight() {
                 return;
             }
             displayFightEvents(data);
-            
+
         }).catch(error => {
             console.error('Error getting new upgrades:', error);
         });
@@ -115,6 +115,11 @@ function displayFightEvents(data) {
                 case "end":
                     displayCombatEvent(`<b><ins>${eventData.Winner.Name} wins !</ins></b>`);
                     break;
+                case "dead":
+                    displayCombatEvent(`<b>Your character dies !</b>`);
+                    await wait(1);
+                    gameOver();
+                    break;
             }
         }
 
@@ -137,6 +142,11 @@ function displayFightEvents(data) {
     function updateInfo(infoEl, data) {
         infoEl.querySelector(".character-name").textContent = data.Name;
         infoEl.querySelector(".class-name").textContent = `Class: ${data.ClassId}`;
+
+        const livesElem  = infoEl.querySelector(".lives");
+        if (livesElem) {
+            livesElem.textContent = `Lives: ${data.Lives}`;
+        }
         infoEl.querySelector(".hp").textContent = `Health: ${data.Health}/${data.HealthMax}`;
         infoEl.querySelector(".hp-bar").setAttribute("value", data.Health);
         infoEl.querySelector(".hp-bar").setAttribute("max", data.HealthMax);
@@ -150,7 +160,7 @@ function gameOver() {
     //Remove character local storage
     localStorage.removeItem(STORED_CHARID);
 
-
+    openNewCharDialog();
     // TODO: Open gameover dialog
 
 }
@@ -220,7 +230,6 @@ function openNewCharDialog() {
                 localStorage.setItem(STORED_CHARID, characterId);
 
                 dialog.close();
-                startFight();
             }).catch(error => {
                 console.error('Error creating character:', error);
             });

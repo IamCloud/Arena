@@ -13,6 +13,7 @@ const (
 	EV_TP_INIT      = "init"
 	EV_TP_END       = "end"
 	EV_TP_UPD_CHARS = "upd"
+	EV_TP_DEAD      = "dead"
 )
 
 type Item struct {
@@ -52,11 +53,18 @@ func (winner *Character) incrWins() {
 	}
 }
 
+func (loser *Character) decrLives() {
+	_, err := db.Exec("UPDATE characters SET lives = lives - 1 WHERE character_id = ?", loser.CharacterId)
+	if err != nil {
+		fmt.Println("error decrementing character lives.", err)
+		return
+	}
+}
+
 func (attacker *Character) Attack(events *[]FightEvent, defender *Character) {
 	var desc strings.Builder
 
 	var damageDealt int = 0
-	fmt.Printf("%s attacks %s!\n", attacker.Name, defender.Name)
 
 	roll := randRange(1, 20)
 	isMiss := roll+defender.Defense > HIT_THRESHOLD
@@ -66,12 +74,8 @@ func (attacker *Character) Attack(events *[]FightEvent, defender *Character) {
 		if (*defender).Health < 0 {
 			(*defender).Health = 0
 		}
-		fmt.Printf("%s hits %s for %s!\n", attacker.Name, defender.Name, strconv.Itoa(attacker.Damage))
-		fmt.Printf("Target %s current health: %s!\n", defender.Name, strconv.Itoa(defender.Health))
-
 		desc.WriteString(fmt.Sprintf("%s rolls a %s + (%s), fails to defend and receives %s damage!", defender.Name, strconv.Itoa(roll), strconv.Itoa(defender.Defense), strconv.Itoa(attacker.Damage)))
 	} else {
-		fmt.Printf("%s misses %s\n", attacker.Name, defender.Name)
 		desc.WriteString(fmt.Sprintf("%s rolls a %s + (%s) and defends the attack !", defender.Name, strconv.Itoa(roll), strconv.Itoa(defender.Defense)))
 	}
 

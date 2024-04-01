@@ -195,6 +195,15 @@ func simulateFightLogic(playerChar, opponentChar *Character) []FightEvent {
 			if winner == playerChar {
 				playerChar.Wins += 1
 				playerChar.incrWins()
+				fmt.Println("Player wins")
+			} else {
+				playerChar.Lives -= 1
+				playerChar.decrLives()
+				fmt.Println("Player loses")
+
+				if playerChar.Lives < 1 {
+					fightEvents = append(fightEvents, playerCharDeadEvent())
+				}
 			}
 			fightEvents = append(fightEvents, combatEndEvent(winner))
 			break
@@ -237,6 +246,10 @@ func getWinner(player, opponent *Character) *Character {
 func combatEndEvent(winner *Character) FightEvent {
 	endEvent := CombatEndEvent{Winner: *winner}
 	return createEvent(EV_TP_END, endEvent)
+}
+
+func playerCharDeadEvent() FightEvent {
+	return FightEvent{Type: EV_TP_DEAD, Data: "{}"}
 }
 
 func charactersUpdateEvent(player, opponent *Character) FightEvent {
