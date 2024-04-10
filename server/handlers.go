@@ -107,6 +107,17 @@ func createPlayer(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("Player %s created.\n", req.Name)
 }
 
+func chooseUpgrade(w http.ResponseWriter, r *http.Request) {
+	var req UpgradeRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	AddUpgardeToCharacter(req.UpgradeId, req.CharacterId)
+}
+
 func createCharacter(w http.ResponseWriter, r *http.Request) {
 	// Decode the JSON request body into a struct
 	var req CreateCharacterRequest

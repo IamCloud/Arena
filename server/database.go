@@ -198,3 +198,50 @@ func getOpponentInfo(playerCharID string, wins int) (Character, error) {
 	}
 	return opponentCharInfo, nil
 }
+
+func AddUpgardeToCharacter(upgradeId string, characterId string) {
+	switch upgradeId {
+	case "1":
+		incrHp(characterId, 2)
+	case "2":
+		incrInit(characterId, 2)
+	case "3":
+		incrDmg(characterId, 1)
+	case "4":
+		incrDef(characterId, 1)
+	case "5":
+		incrDef(characterId, 5)
+		incrDmg(characterId, -3)
+	}
+}
+
+func incrHp(characterId string, value int) {
+	_, err := db.Exec("UPDATE characters SET health = health + ? WHERE character_id = ?", value, characterId)
+	if err != nil {
+		fmt.Println("error increasing character health.", err)
+		return
+	}
+}
+func incrInit(characterId string, value int) {
+	_, err := db.Exec("UPDATE characters SET initiative = initiative + ? WHERE character_id = ?", value, characterId)
+	if err != nil {
+		fmt.Println("error increasing character initiative.", err)
+		return
+	}
+}
+
+func incrDmg(characterId string, value int) {
+	_, err := db.Exec("UPDATE characters SET damage = damage + ? WHERE character_id = ?", value, characterId)
+	if err != nil {
+		fmt.Println("error increasing character damage.", err)
+		return
+	}
+}
+
+func incrDef(characterId string, value int) {
+	_, err := db.Exec("UPDATE characters SET defense = defense + ? WHERE character_id = ?", value, characterId)
+	if err != nil {
+		fmt.Println("error increasing character defense.", err)
+		return
+	}
+}

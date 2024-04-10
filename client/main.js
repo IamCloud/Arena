@@ -261,25 +261,37 @@ function openUpgradeDialog() {
                 return;
             }
 
+            const fieldset = document.createElement("fieldset");            
             data.forEach(upgrade => {
-                createUpgradeCard(upgrade);
+                fieldset.appendChild(createUpgradeCard(upgrade));
             });
+            upgradesContainer.appendChild(fieldset);
 
         }).catch(error => {
             console.error('Error getting new upgrades:', error);
         });
 
     function createUpgradeCard(upgrade) {
-        let div = document.createElement("div");
-        div.innerHTML = upgrade.name;
+        let lbl = document.createElement("label");
+        lbl.innerText = `${upgrade.name} (${upgrade.description})`;
 
-        upgradesContainer.appendChild(div);
+        const radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "upgrade";
+        radio.value = upgrade.id;
+
+        lbl.appendChild(radio);
+        return lbl;
     }
 
 
     dialogForm.addEventListener("submit", function (ev) {
         ev.preventDefault();
+        const chosenUpgrade = dialogForm.querySelector("input[type='radio']:checked");
 
+        console.log(chosenUpgrade.value);
+
+        Server.chooseUpgrade(characterId, chosenUpgrade.value);
         dialog.close();
         /*Server.createCharacter(localStorage.getItem(STORED_PLAYERID), teamname.value)
             .then(teamId => {

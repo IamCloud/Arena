@@ -49,7 +49,19 @@ let Server = {
                 })
         });
     },
-
+    chooseUpgrade: function(characterId, upgradeId) {
+        fetch("/chooseupgrade", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ CharacterId: characterId, UpgradeId: upgradeId })
+        })
+        .catch(error => {
+          console.error('Error choosing upgrade:', error);
+        });
+      },
+      
     // Function to fetch leaderboard data from the Go server
     getLeaderboard: function () {
         return new Promise((resolve, reject) => {

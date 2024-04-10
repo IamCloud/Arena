@@ -139,7 +139,10 @@ type Leaderboard struct {
 type CreatePlayerRequest struct {
 	Name string
 }
-
+type UpgradeRequest struct {
+	CharacterId string
+	UpgradeId   string
+}
 type CreateCharacterRequest struct {
 	PlayerId      string
 	CharacterName string

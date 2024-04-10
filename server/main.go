@@ -30,6 +30,7 @@ func main() {
 	http.HandleFunc("/createplayer", createPlayer)
 	http.HandleFunc("/createcharacter", createCharacter)
 	http.HandleFunc("/getnewupgrades", getNewUpgrades)
+	http.HandleFunc("/chooseupgrade", chooseUpgrade)
 	http.HandleFunc("/simulatefight", simulateFight)
 
 	rootDir := "./.." // Assuming your main folder is named Arena
