@@ -9,35 +9,31 @@ import (
 	"strconv"
 )
 
+const databaseFileName = "database.db"
+
 func initDb(needReset bool) {
-	err := openDb()
-	if err != nil {
+	if err := openDb(); err != nil {
 		log.Fatalf("Error opening database: %v", err)
 	}
 
 	if needReset {
-		err = resetDb()
-		if err != nil {
+		if err := resetDb(); err != nil {
 			log.Fatalf("Error resetting database: %v", err)
 		}
-		err = createBots()
-		if err != nil {
+		if err := createBots(); err != nil {
 			log.Fatalf("Error creating bots: %v", err)
 		}
 	}
 }
 
 func openDb() error {
-	// Get the current working directory
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
-	// Construct the path to the database file in the project folder
-	databasePath := filepath.Join(cwd, "database.db")
+	databasePath := filepath.Join(cwd, databaseFileName)
 
-	// Open the SQLite database
 	db, err = sql.Open("sqlite3", databasePath)
 	if err != nil {
 		return err
@@ -47,33 +43,24 @@ func openDb() error {
 }
 
 func deleteSqliteDatabase() error {
-	// Check if the file exists
-	if _, err := os.Stat("database.db"); os.IsNotExist(err) {
-		return nil // Database file doesn't exist, nothing to delete
+	if _, err := os.Stat(databaseFileName); os.IsNotExist(err) {
+		return nil
 	} else if err != nil {
-		return err // Handle other errors during stat
+		return err
 	}
 
-	// Delete the file if it exists
-	err := os.Remove("database.db")
-	if err != nil {
-		return err // Handle deletion errors
-	}
-	return nil
+	return os.Remove(databaseFileName)
 }
 
 func resetDb() error {
-	err := deleteSqliteDatabase()
-	if err != nil {
+	if err := deleteSqliteDatabase(); err != nil {
 		return err
 	}
 
-	err = openDb()
-	if err != nil {
+	if err := openDb(); err != nil {
 		return err
 	}
 
-	// Read the script file
 	scriptBytes, err := os.ReadFile("DbInit.sql")
 	if err != nil {
 		return err
@@ -89,26 +76,25 @@ func resetDb() error {
 
 func createBots() error {
 	for i := 0; i < 100; i++ {
-		err := createBot(1, i)
-		if err != nil {
+		if err := createBot(1, i); err != nil {
 			return err
 		}
-		err = createBot(2, i)
-		if err != nil {
+		if err := createBot(2, i); err != nil {
 			return err
 		}
 	}
-
 	return nil
 }
-func createBot(class_id int, wins int) error {
-	var req CreateCharacterRequest
-	req.PlayerId = "1"
-	req.ClassId = strconv.Itoa(class_id)
-	req.CharacterName = "Bot (" + strconv.Itoa(wins) + ")"
-	req.Wins = strconv.Itoa(wins)
-	_, err := insertCharacter(req)
-	if err != nil {
+
+func createBot(classID, wins int) error {
+	req := CreateCharacterRequest{
+		PlayerId:      "1",
+		ClassId:       strconv.Itoa(classID),
+		CharacterName: "Bot (" + strconv.Itoa(wins) + ")",
+		Wins:          strconv.Itoa(wins),
+	}
+
+	if _, err := insertCharacter(req); err != nil {
 		return err
 	}
 
@@ -139,7 +125,7 @@ func insertCharacter(req CreateCharacterRequest) (int64, error) {
 
 	_, err = db.Exec("INSERT INTO players_characters (player_id, character_id) VALUES (?, ?)", req.PlayerId, id)
 	if err != nil {
-		return 0, fmt.Errorf("error player character relationship: %v", err)
+		return 0, fmt.Errorf("error inserting player character relationship: %v", err)
 	}
 
 	return id, nil
@@ -175,73 +161,48 @@ func getClassInfo(classId string) (ClassInfo, error) {
 func getCharacterInfo(characterId string) (Character, error) {
 	var info Character
 	err := db.QueryRow(`SELECT character_id, name, wins, health, initiative, damage, defense, resource, resource_max, lives, class_id
-						FROM characters
-						WHERE character_id = ?`, characterId).Scan(&info.CharacterId, &info.Name, &info.Wins, &info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.Resource, &info.ResourceMax, &info.Lives, &info.ClassId)
-
-	info.HealthMax = info.Health
+                        FROM characters
+                        WHERE character_id = ?`, characterId).Scan(&info.CharacterId, &info.Name, &info.Wins, &info.Health, &info.Initiative, &info.Damage, &info.Defense, &info.Resource, &info.ResourceMax, &info.Lives, &info.ClassId)
 	if err != nil {
 		return Character{}, err
 	}
+	info.HealthMax = info.Health
 	return info, nil
 }
 
 func getOpponentInfo(playerCharID string, wins int) (Character, error) {
 	var opponentCharInfo Character
 	err := db.QueryRow(`SELECT character_id, name, wins, health, initiative, damage, defense, resource, resource_max, lives, class_id
-						FROM characters
-						WHERE character_id != ? AND wins = ?
-						ORDER BY RANDOM()
-						LIMIT 1`, playerCharID, wins).Scan(&opponentCharInfo.CharacterId, &opponentCharInfo.Name, &opponentCharInfo.Wins, &opponentCharInfo.Health, &opponentCharInfo.Initiative, &opponentCharInfo.Damage, &opponentCharInfo.Defense, &opponentCharInfo.Resource, &opponentCharInfo.ResourceMax, &opponentCharInfo.Lives, &opponentCharInfo.ClassId)
-	opponentCharInfo.HealthMax = opponentCharInfo.Health
+                        FROM characters
+                        WHERE character_id != ? AND wins = ?
+                        ORDER BY RANDOM()
+                        LIMIT 1`, playerCharID, wins).Scan(&opponentCharInfo.CharacterId, &opponentCharInfo.Name, &opponentCharInfo.Wins, &opponentCharInfo.Health, &opponentCharInfo.Initiative, &opponentCharInfo.Damage, &opponentCharInfo.Defense, &opponentCharInfo.Resource, &opponentCharInfo.ResourceMax, &opponentCharInfo.Lives, &opponentCharInfo.ClassId)
 	if err != nil {
 		return Character{}, err
 	}
+	opponentCharInfo.HealthMax = opponentCharInfo.Health
 	return opponentCharInfo, nil
 }
 
-func AddUpgardeToCharacter(upgradeId string, characterId string) {
+func AddUpgradeToCharacter(upgradeId, characterId string) {
 	switch upgradeId {
 	case "1":
-		incrHp(characterId, 2)
+		incrStat("health", characterId, 2)
 	case "2":
-		incrInit(characterId, 2)
+		incrStat("initiative", characterId, 2)
 	case "3":
-		incrDmg(characterId, 1)
+		incrStat("damage", characterId, 1)
 	case "4":
-		incrDef(characterId, 1)
+		incrStat("defense", characterId, 1)
 	case "5":
-		incrDef(characterId, 5)
-		incrDmg(characterId, -3)
+		incrStat("defense", characterId, 5)
+		incrStat("damage", characterId, -3)
 	}
 }
 
-func incrHp(characterId string, value int) {
-	_, err := db.Exec("UPDATE characters SET health = health + ? WHERE character_id = ?", value, characterId)
+func incrStat(stat, characterId string, value int) {
+	_, err := db.Exec(fmt.Sprintf("UPDATE characters SET %s = %s + ? WHERE character_id = ?", stat, stat), value, characterId)
 	if err != nil {
-		fmt.Println("error increasing character health.", err)
-		return
-	}
-}
-func incrInit(characterId string, value int) {
-	_, err := db.Exec("UPDATE characters SET initiative = initiative + ? WHERE character_id = ?", value, characterId)
-	if err != nil {
-		fmt.Println("error increasing character initiative.", err)
-		return
-	}
-}
-
-func incrDmg(characterId string, value int) {
-	_, err := db.Exec("UPDATE characters SET damage = damage + ? WHERE character_id = ?", value, characterId)
-	if err != nil {
-		fmt.Println("error increasing character damage.", err)
-		return
-	}
-}
-
-func incrDef(characterId string, value int) {
-	_, err := db.Exec("UPDATE characters SET defense = defense + ? WHERE character_id = ?", value, characterId)
-	if err != nil {
-		fmt.Println("error increasing character defense.", err)
-		return
+		fmt.Printf("error increasing character %s: %v\n", stat, err)
 	}
 }

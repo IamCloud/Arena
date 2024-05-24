@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -45,41 +44,40 @@ type Character struct {
 	ClassId     int
 }
 
-func (winner *Character) incrWins() {
-	_, err := db.Exec("UPDATE characters SET wins = wins + 1 WHERE character_id = ?", winner.CharacterId)
+func (c *Character) incrWins() error {
+	_, err := db.Exec("UPDATE characters SET wins = wins + 1 WHERE character_id = ?", c.CharacterId)
 	if err != nil {
-		fmt.Println("error incrementing character wins.", err)
-		return
+		return fmt.Errorf("error incrementing character wins: %w", err)
 	}
+	return nil
 }
 
-func (loser *Character) decrLives() {
-	_, err := db.Exec("UPDATE characters SET lives = lives - 1 WHERE character_id = ?", loser.CharacterId)
+func (c *Character) decrLives() error {
+	_, err := db.Exec("UPDATE characters SET lives = lives - 1 WHERE character_id = ?", c.CharacterId)
 	if err != nil {
-		fmt.Println("error decrementing character lives.", err)
-		return
+		return fmt.Errorf("error decrementing character lives: %w", err)
 	}
+	return nil
 }
 
-func (attacker *Character) Attack(events *[]FightEvent, defender *Character) {
+func (a *Character) Attack(events *[]FightEvent, d *Character) {
 	var desc strings.Builder
-
-	var damageDealt int = 0
+	var damageDealt int
 
 	roll := randRange(1, 20)
-	isMiss := roll+defender.Defense > HIT_THRESHOLD
+	isMiss := roll+d.Defense > HIT_THRESHOLD
 	if !isMiss {
-		damageDealt = attacker.Damage
-		(*defender).Health -= attacker.Damage
-		if (*defender).Health < 0 {
-			(*defender).Health = 0
+		damageDealt = a.Damage
+		d.Health -= a.Damage
+		if d.Health < 0 {
+			d.Health = 0
 		}
-		desc.WriteString(fmt.Sprintf("%s rolls a %s + (%s), fails to defend and receives %s damage!", defender.Name, strconv.Itoa(roll), strconv.Itoa(defender.Defense), strconv.Itoa(attacker.Damage)))
+		desc.WriteString(fmt.Sprintf("%s rolls a %d + (%d), fails to defend and receives %d damage!", d.Name, roll, d.Defense, a.Damage))
 	} else {
-		desc.WriteString(fmt.Sprintf("%s rolls a %s + (%s) and defends the attack !", defender.Name, strconv.Itoa(roll), strconv.Itoa(defender.Defense)))
+		desc.WriteString(fmt.Sprintf("%s rolls a %d + (%d) and defends the attack!", d.Name, roll, d.Defense))
 	}
 
-	event := AttackEvent{AttackerName: attacker.Name, DefenderName: defender.Name, Success: !isMiss, Damage: damageDealt}
+	event := AttackEvent{AttackerName: a.Name, DefenderName: d.Name, Success: !isMiss, Damage: damageDealt}
 	jsonData, err := json.Marshal(event)
 	if err != nil {
 		fmt.Println("Error marshalling data:", err)

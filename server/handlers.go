@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/google/uuid"
 )
@@ -20,66 +19,46 @@ func getLeaderboard(w http.ResponseWriter, r *http.Request) {
 		LIMIT 10
     `)
 	if err != nil {
-		fmt.Printf("error getting leaderboard top 10: %v\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, "error getting leaderboard top 10", err)
 		return
 	}
 	defer rows.Close()
 
-	// Initialize a slice to store the top 5 teams
 	var leaderboardRecords []Leaderboard
-
-	// Iterate through the rows and append each team to the slice
 	for rows.Next() {
-		var leaderboard Leaderboard
-		if err := rows.Scan(&leaderboard.PlayerName, &leaderboard.CharacterName, &leaderboard.Wins); err != nil {
-			fmt.Printf("error filling leaderboard rows: %v\n", err)
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+		var record Leaderboard
+		if err := rows.Scan(&record.PlayerName, &record.CharacterName, &record.Wins); err != nil {
+			handleError(w, "error filling leaderboard rows", err)
 			return
 		}
-		leaderboardRecords = append(leaderboardRecords, leaderboard)
+		leaderboardRecords = append(leaderboardRecords, record)
 	}
 
-	// Check for any errors during iteration
 	if err := rows.Err(); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handleError(w, "row iteration error", err)
 		return
 	}
 
-	// Encode the top 5 teams slice into JSON and send as response
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(leaderboardRecords); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	writeJSON(w, http.StatusOK, leaderboardRecords)
 }
 
 func getNewUpgrades(w http.ResponseWriter, r *http.Request) {
 	var upgrades []interface{}
-
 	for i := 0; i < 3; i++ {
 		item, err := getRandomItem()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			handleError(w, "error getting random item", err)
 			return
 		}
 		upgrades = append(upgrades, item)
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(upgrades)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	writeJSON(w, http.StatusOK, upgrades)
 }
 
 func createPlayer(w http.ResponseWriter, r *http.Request) {
-	// Decode the JSON request body into a struct
 	var req CreatePlayerRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, "invalid JSON", err)
 		return
 	}
 
@@ -89,41 +68,35 @@ func createPlayer(w http.ResponseWriter, r *http.Request) {
 	}
 
 	playerGuid := uuid.New().String()
-	err = insertPlayer(req, playerGuid)
-	if err != nil {
-		fmt.Printf("error inserting player: %v\n", err)
+	if err := insertPlayer(req, playerGuid); err != nil {
+		handleError(w, "error inserting player", err)
 		return
 	}
 
 	response := struct {
 		PlayerGuid string `json:"player_guid"`
-	}{
-		PlayerGuid: playerGuid,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-
-	fmt.Printf("Player %s created.\n", req.Name)
+	}{PlayerGuid: playerGuid}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func chooseUpgrade(w http.ResponseWriter, r *http.Request) {
 	var req UpgradeRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, "invalid JSON", err)
 		return
 	}
 
-	AddUpgardeToCharacter(req.UpgradeId, req.CharacterId)
+	// TODO: Add verification that the number of upgrades fits the number of upgrades to avoid exploits.
+	AddUpgradeToCharacter(req.UpgradeId, req.CharacterId)
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Upgrade added successfully"))
 }
 
 func createCharacter(w http.ResponseWriter, r *http.Request) {
-	// Decode the JSON request body into a struct
 	var req CreateCharacterRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, "invalid JSON", err)
 		return
 	}
 
@@ -135,27 +108,20 @@ func createCharacter(w http.ResponseWriter, r *http.Request) {
 	req.Wins = "0"
 	characterId, err := insertCharacter(req)
 	if err != nil {
-		fmt.Printf("error inserting character: %v\n", err)
+		handleError(w, "error inserting character", err)
 		return
 	}
 
 	response := struct {
 		CharacterID int64 `json:"character_id"`
-	}{
-		CharacterID: characterId,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
-
-	fmt.Printf("Character %s[%s] created successfully for player of id %s\n", req.CharacterName, strconv.FormatInt(characterId, 10), req.PlayerId)
+	}{CharacterID: characterId}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func simulateFight(w http.ResponseWriter, r *http.Request) {
 	var req SimulateFightRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		handleError(w, "invalid JSON", err)
 		return
 	}
 
@@ -166,29 +132,31 @@ func simulateFight(w http.ResponseWriter, r *http.Request) {
 
 	playerChar, err := getCharacterInfo(req.CharacterId)
 	if err != nil {
-		fmt.Printf("error getting character info: %v\n", err)
+		handleError(w, "error getting character info", err)
 		return
 	}
-	fmt.Printf("%+v\n", playerChar)
-	fmt.Printf("Fight of character %s starting. Searching for target...\n", playerChar.Name)
 
 	opponentChar, err := getOpponentInfo(req.CharacterId, playerChar.Wins)
 	if err != nil {
-		fmt.Printf("error finding opponent info: %v\n", err)
+		handleError(w, "error finding opponent info", err)
 		return
 	}
 
-	fmt.Printf("Opponent found: %s\n", opponentChar.Name)
-
-	// Simulate the fight on the server
 	fightResult := simulateFightLogic(&playerChar, &opponentChar)
+	writeJSON(w, http.StatusOK, fightResult)
+}
 
-	// Send all fight event data in a single response
-	//fightEventData := prepareFightEventData(fightResult, charInfo, opponentInfo)
+func handleError(w http.ResponseWriter, message string, err error) {
+	fmt.Printf("%s: %v\n", message, err)
+	http.Error(w, err.Error(), http.StatusInternalServerError)
+}
 
+func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(fightResult)
+	w.WriteHeader(status)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func simulateFightLogic(playerChar, opponentChar *Character) []FightEvent {
